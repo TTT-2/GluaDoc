@@ -1,77 +1,77 @@
-﻿using System;
+﻿using StylishForms;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using System.Text.RegularExpressions;
-using System.Web.Script.Serialization;
-using System.Threading;
-using System.Windows.Forms;
 using System.Drawing;
-using System.Drawing.Imaging;
-using System.Diagnostics;
-using StylishForms;
+using System.IO;
+using System.Windows.Forms;
 
 namespace LuaDocIt
 {
-    class LuaDocIt
+    internal static class LuaDocIt
     {
-        static void GenerateDocumentation(LuaFile[] files, string path)
+        private static void GenerateDocumentation(LuaFile[] files, string path)
         {
             string json = "[";
+
             for (int n = 0; n < files.Length; n++)
             {
                 for (int f = 0; f < files[n].Functions.Length; f++)
                 {
                     json = json + files[n].Functions[f].GenerateJson() + ",";
                 }
+
                 for (int f = 0; f < files[n].Hooks.Length; f++)
                 {
                     json = json + files[n].Hooks[f].GenerateJson() + ",";
                 }
             }
+
             json = json.TrimEnd(',');
-            json = json + "]";
-            Directory.CreateDirectory($@"output/{path}");
-            File.WriteAllText($@"output/{path}/documentation.json", json);
+            json += "]";
+
+            Directory.CreateDirectory($"output/{path}");
+            File.WriteAllText($"output/{path}/documentation.json", json);
 
             //copy web files
-            string[] webfiles = Directory.GetFiles(@"webfiles/");
-            foreach( string s in webfiles )
+            foreach (string s in Directory.GetFiles("webfiles/"))
             {
-                File.Copy(s, Path.Combine($@"output/{path}/", Path.GetFileName(s)), true);
+                File.Copy(s, Path.Combine($"output/{path}/", Path.GetFileName(s)), true);
             }
 
             MessageBox.Show($"Your documentation has been generated succesfully in 'output/{path}/'\n\nWeb files have also been copied to your folder, you can upload it all to your website.");
         }
 
-        static LuaFile[] PrepLuaFiles(string[] files)
+        private static LuaFile[] PrepLuaFiles(string[] files)
         {
             List<LuaFile> generated = new List<LuaFile>();
-            for( int n = 0; n<files.Length;n++ )
+
+            for (int n = 0; n < files.Length; n++)
             {
                 generated.Add(new LuaFile(files[n]));
             }
+
             return generated.ToArray();
         }
 
-        static string[] BuildFileTree(string path)
+        private static string[] BuildFileTree(string path)
         {
-            string[] files = Directory.GetFiles(path, "*.lua", SearchOption.AllDirectories);
-            return files;
+            return Directory.GetFiles(path, "*.lua", SearchOption.AllDirectories);
         }
 
         [STAThread]
-        static void Main()
+        private static void Main()
         {
-            StylishForm mainMenu = new StylishForm();
-            mainMenu.Text = "LuaDocIt";
+            StylishForm mainMenu = new StylishForm
+            {
+                Text = "LuaDocIt"
+            };
             mainMenu.SetBounds(0, 0, 800, 600);
-            mainMenu.Icon = new Icon("content/icon.ico");
+            mainMenu.Icon = new Icon("../../../content/icon.ico");
 
-            Panel fileTreePanel = new Panel();
-            fileTreePanel.Parent = mainMenu;
+            Panel fileTreePanel = new Panel
+            {
+                Parent = mainMenu
+            };
             fileTreePanel.SetBounds(230, 5, 550, 552);
             fileTreePanel.BackColor = Color.FromArgb(238, 238, 255);
             fileTreePanel.AutoScroll = false;
@@ -80,23 +80,26 @@ namespace LuaDocIt
             fileTreePanel.HorizontalScroll.Maximum = 0;
             fileTreePanel.AutoScroll = true;
 
-            StylishButton addonFolder = new StylishButton();
-            addonFolder.Text = "Select Folder";
-            addonFolder.Parent = mainMenu;
+            StylishButton addonFolder = new StylishButton
+            {
+                Text = "Select Folder",
+                Parent = mainMenu
+            };
             addonFolder.SetBounds(5, 5, 220, 35);
             addonFolder.TextFont = new Font("Arial", 12);
             addonFolder.Background = Color.FromArgb(255, 193, 7);
             addonFolder.SideGround = Color.FromArgb(194, 146, 0);
             addonFolder.TextColor = Color.White;
-            FolderBrowserDialog fileSelection = new FolderBrowserDialog();
-            addonFolder.Click += (sender, e) =>
-            {
-                fileSelection.ShowDialog();
-            };
 
-            StylishButton generateTree = new StylishButton();
-            generateTree.Text = "List Files";
-            generateTree.Parent = mainMenu;
+            FolderBrowserDialog fileSelection = new FolderBrowserDialog();
+
+            addonFolder.Click += (sender, e) => fileSelection.ShowDialog();
+
+            StylishButton generateTree = new StylishButton
+            {
+                Text = "List Files",
+                Parent = mainMenu
+            };
             generateTree.SetBounds(5, 42, 220, 35);
             generateTree.TextFont = new Font("Arial", 12);
             generateTree.Background = Color.FromArgb(139, 195, 74);
@@ -104,44 +107,52 @@ namespace LuaDocIt
             generateTree.TextColor = Color.White;
             generateTree.Click += (sender, e) =>
             {
-                for( int c = 0; c < fileTreePanel.Controls.Count; c++ )
+                for (int c = 0; c < fileTreePanel.Controls.Count; c++)
                 {
                     fileTreePanel.Controls[c].Dispose();
                     fileTreePanel.Invalidate();
                 }
 
                 string[] files = BuildFileTree(fileSelection.SelectedPath);
+
                 LuaFile[] luaFileObj = PrepLuaFiles(files);
 
                 for (int i = 0; i < files.Length; i++)
                 {
-                    PictureBox icon = new PictureBox();
-                    icon.Image = Image.FromFile("content/lua_icon.png");
-                    icon.Size = new Size(24, 24);
-                    icon.SizeMode = PictureBoxSizeMode.StretchImage;
-                    icon.Parent = fileTreePanel;
-                    icon.Left = 5;
-                    icon.Top = 5 + 29 * i;
+                    PictureBox icon = new PictureBox
+                    {
+                        Image = Image.FromFile("content/lua_icon.png"),
+                        Size = new Size(24, 24),
+                        SizeMode = PictureBoxSizeMode.StretchImage,
+                        Parent = fileTreePanel,
+                        Left = 5,
+                        Top = 5 + (29 * i)
+                    };
 
-                    Label name = new Label();
-                    name.AutoSize = true;
-                    name.Text = Path.GetFileName(files[i]);
-                    name.Parent = fileTreePanel;
-                    name.Left = 34;
-                    name.Top = 10 + 29 * i;
+                    Label name = new Label
+                    {
+                        AutoSize = true,
+                        Text = Path.GetFileName(files[i]),
+                        Parent = fileTreePanel,
+                        Left = 34,
+                        Top = 10 + (29 * i)
+                    };
 
-                    Label total = new Label();
-                    total.AutoSize = true;
-                    total.Text = $"Elements: {luaFileObj[i].Functions.Length + luaFileObj[i].Hooks.Length}";
-                    total.ForeColor = Color.Blue;
-                    total.Parent = fileTreePanel;
-                    total.Top = 10 + 29 * i;
-                    total.Left = name.Left + name.Width + 5;
+                    Label total = new Label
+                    {
+                        AutoSize = true,
+                        Text = $"Elements: {luaFileObj[i].Functions.Length + luaFileObj[i].Hooks.Length}",
+                        ForeColor = Color.Blue,
+                        Parent = fileTreePanel,
+                        Top = 10 + (29 * i),
+                        Left = name.Left + name.Width + 5
+                    };
 
                     int goodf = 0;
+
                     for (int f = 0; f < luaFileObj[i].Functions.Length; f++)
                     {
-                        if( luaFileObj[i].Functions[f].param.Count > 0 )
+                        if (luaFileObj[i].Functions[f].param.Count > 0)
                         {
                             goodf++;
                         }
@@ -157,32 +168,40 @@ namespace LuaDocIt
 
                     int badf = luaFileObj[i].Functions.Length + luaFileObj[i].Hooks.Length - goodf;
 
-                    Label good = new Label();
-                    good.AutoSize = true;
-                    good.Text = goodf > 0 ? $"To-Document: {goodf}" : "";
-                    good.ForeColor = Color.Green;
-                    good.Parent = fileTreePanel;
-                    good.Top = 10 + 29 * i;
-                    good.Left = total.Left + total.Width + 2;
+                    Label good = new Label
+                    {
+                        AutoSize = true,
+                        Text = goodf > 0 ? $"To-Document: {goodf}" : "",
+                        ForeColor = Color.Green,
+                        Parent = fileTreePanel,
+                        Top = 10 + (29 * i),
+                        Left = total.Left + total.Width + 2
+                    };
 
-                    Label bad = new Label();
-                    bad.AutoSize = true;
-                    bad.Text = badf > 0 ? $"To-Skip: {badf}" : "";
-                    bad.ForeColor = Color.Red;
-                    bad.Parent = fileTreePanel;
-                    bad.Top = 10 + 29 * i;
-                    bad.Left = good.Left + good.Width + 2;
+                    Label bad = new Label
+                    {
+                        AutoSize = true,
+                        Text = badf > 0 ? $"To-Skip: {badf}" : "",
+                        ForeColor = Color.Red,
+                        Parent = fileTreePanel,
+                        Top = 10 + (29 * i),
+                        Left = good.Left + good.Width + 2
+                    };
                 }
             };
 
-            StylishTextEntry docName = new StylishTextEntry();
-            docName.Parent = mainMenu;
+            StylishTextEntry docName = new StylishTextEntry
+            {
+                Parent = mainMenu
+            };
             docName.SetBounds(5, 495, 220, 35);
             docName.Text = "Project name";
 
-            StylishButton generateDoc = new StylishButton();
-            generateDoc.Text = "Generate Documentation";
-            generateDoc.Parent = mainMenu;
+            StylishButton generateDoc = new StylishButton
+            {
+                Text = "Generate Documentation",
+                Parent = mainMenu
+            };
             generateDoc.SetBounds(5, 522, 220, 35);
             generateDoc.TextFont = new Font("Arial", 12);
             generateDoc.Background = Color.FromArgb(233, 30, 99);
