@@ -1,0 +1,19 @@
+{
+    "name": "gmod_docu",
+    "version": "1.0.0",
+    "description": "",
+    "main": "main.js",
+    "scripts": {
+        "compile": "tsc && npx webpack --config webpack.config.js"
+    },
+    "repository": {
+        "type": "git"
+    },
+    "keywords": [],
+    "author": "",
+    "devDependencies": {
+        "webpack": "^4.35.3",
+        "webpack-cli": "^3.3.5",
+        "typescript": "^3.5.3"
+    }
+}

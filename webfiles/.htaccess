@@ -1,0 +1,5 @@
+#always redirect to basefile (index.html)
+RewriteEngine On
+RewriteBase /
+RewriteCond %{REQUEST_URI} !.*/SVDATA/.*
+RewriteRule ^(.*)$ index.html [L,QSA,NE]
