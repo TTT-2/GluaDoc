@@ -13,6 +13,18 @@ namespace LuaDocIt
 		public string Module;
 		public string Type;
 
+		private string GetLineParam(int i)
+		{
+			string param = this.Lines[i].TrimStart('-').TrimStart();
+
+			if (!param.StartsWith("@"))
+			{
+				return "";
+			}
+
+			return param.TrimStart('@').Split(' ')[0];
+		}
+
 		private Dictionary<string, object> GetWordParams(int i)
 		{
 			Dictionary<string, object> param = new Dictionary<string, object>();
@@ -101,13 +113,13 @@ namespace LuaDocIt
 			{
 				this.Lines[i] = this.Lines[i].TrimStart(); // clean up every space in front
 
-				if (this.Lines[i].StartsWith("module"))
+				if (this.Lines[i].StartsWith("module")) // module("...", ...) support
 				{
 					this.Module = this.GetName(i, "module");
 
 					break;
 				}
-				else if (this.Lines[i].TrimStart('-').TrimStart().StartsWith("@type"))
+				else if (this.GetLineParam(i).Equals("type")) // @type support
 				{
 					Dictionary<string, object> param = this.GetParams(i);
 
@@ -117,9 +129,16 @@ namespace LuaDocIt
 				}
 			}
 
+			string section = "";
+
 			for (int i = 0; i < this.Lines.Length; i++)
 			{
 				bool local = this.Lines[i].StartsWith("local function");
+
+				if (this.GetLineParam(i).Equals("section")) // @section support
+				{
+					section = this.GetWordParams(i)["section"].ToString();
+				}
 
 				if (this.Lines[i].StartsWith("function") || local) // find line that is supposedly a function
 				{
@@ -136,7 +155,7 @@ namespace LuaDocIt
 
 					string pre = string.IsNullOrEmpty(this.Module) ? "" : (this.Module + "."); // adding module name as prefix
 
-					finds.Add(new LuaFunction(pre + name, param, this.Module, this.Type));
+					finds.Add(new LuaFunction(pre + name, param, this.Module, this.Type, section));
 				}
 				else if (this.Lines[i].StartsWith("hook.Add"))
 				{
