@@ -55,6 +55,22 @@ namespace LuaDocIt
             return param;
         }
 
+		private string GetName(int i, string prefix)
+		{
+			string name = this.Lines[i];
+			name = name.Remove(0, prefix.Length);
+
+			string[] args = name.Split(',');
+
+			name = args[0];
+			name = name.TrimStart('('); // remove ( that starts with each hook.Add, hook.Call
+			name = name.TrimStart(); // remove eventual bonus space
+			name = name.TrimStart('"');
+			name = name.TrimEnd('"');
+
+			return name;
+		}
+
         public LuaFile(string path)
         {
             this.Lines = File.ReadAllLines(path);
@@ -62,7 +78,19 @@ namespace LuaDocIt
             List<LuaFunction> finds = new List<LuaFunction>();
             List<LuaHook> hfinds = new List<LuaHook>();
 
-            for (int i = 0; i < this.Lines.Length; i++)
+			string module = "";
+
+			for (int i = 0; i < this.Lines.Length; i++)
+			{
+				if (this.Lines[i].StartsWith("module"))
+				{
+					module = this.GetName(i, "module") + ".";
+
+					break;
+				}
+			}
+
+			for (int i = 0; i < this.Lines.Length; i++)
             {
 				bool local = this.Lines[i].StartsWith("local function");
 
@@ -79,22 +107,12 @@ namespace LuaDocIt
 
                     Dictionary<string, object> param = this.GetParams(i, local);
 
-                    finds.Add(new LuaFunction(name, param));
+                    finds.Add(new LuaFunction(module + name, param));
                 }
                 else if (this.Lines[i].StartsWith("hook.Add"))
                 {
-                    string name = this.Lines[i];
-                    name = name.Remove(0, 8);
-
-                    string[] args = name.Split(',');
-
-                    name = args[0];
-                    name = name.TrimStart('('); // remove ( that starts with each hook.Add, hook.Call
-                    name = name.TrimStart();    // remove eventual bonus space
-                    name = name.TrimStart('"');
-                    name = name.TrimEnd('"');
-
-                    Dictionary<string, object> param = this.GetParams(i);
+                    string name = this.GetName(i, "hook.Add");
+					Dictionary<string, object> param = this.GetParams(i);
 
                     hfinds.Add(new LuaHook(name, param));
                 }
