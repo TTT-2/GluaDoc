@@ -66,25 +66,37 @@ a {
 
 .navlist-element {
 	margin-bottom: 2px;
-	color: white;
-	font-weight: 100;
 	font-size: 105%;
 }
 
-.navlist-element.client {
-	color: rgb(241, 215, 101);
+.navlist-element.wrapper {
+	opacity: 0.6;
 }
 
-.navlist-element.server {
-	color: rgb(90, 159, 222);
+.navlist-element.wrapper:hover {
+	opacity: 0.95;
 }
 
-.navlist-element.shared {
-	color: rgb(255, 255, 255, 0.75);
+.navlist-element.wrapper:active {
+	opacity: 1;
+	font-weight: bold;
 }
 
-.navlist-element.shared:hover {
-	color: rgba(255, 255, 255, 0.95);
+.navlist-element .prefix {
+	color: rgba(255, 255, 255, 0.75);
+	font-size: 85%;
+}
+
+.navlist-element .client {
+	color: rgba(6, 127, 240, 1);
+}
+
+.navlist-element .server {
+	color: rgba(255, 115, 0, 1);
+}
+
+.navlist-element .shared {
+	color: rgba(165, 134, 192, 1);
 }
 
 ::-webkit-scrollbar {
