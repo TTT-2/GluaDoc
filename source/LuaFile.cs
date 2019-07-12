@@ -10,6 +10,33 @@ namespace LuaDocIt
 		public LuaFunction[] Functions;
 		public LuaHook[] Hooks;
 
+		private Dictionary<string, object> GetWordParams(int i)
+		{
+			Dictionary<string, object> param = new Dictionary<string, object>();
+
+			string key = Regex.Match(this.Lines[i], @"@\w*").Value;
+
+			this.Lines[i] = this.Lines[i].Remove(0, this.Lines[i].IndexOf(key)); // remove whats before param key
+
+			int end = key.Length + 1;
+
+			if (end <= this.Lines[i].Length) // if there are params for the word
+			{
+				this.Lines[i] = this.Lines[i].Remove(this.Lines[i].IndexOf(key), end); // remove param key from line + one space
+				this.Lines[i] = this.Lines[i].TrimEnd(';');
+			}
+			else // there are no params for this word
+			{
+				this.Lines[i] = "";
+			}
+
+			key = key.TrimStart('@');
+			
+			param.Add(key, this.Lines[i]);
+
+			return param;
+		}
+
 		private Dictionary<string, object> GetParams(int i, bool local = false)
 		{
 			Dictionary<string, object> param = new Dictionary<string, object>();
@@ -18,27 +45,14 @@ namespace LuaDocIt
 			{
 				if (i - y >= 0 && Regex.IsMatch(this.Lines[i - y], @"@\w*")) // if line has @word in it then process it, otherwise stop ALL search
 				{
-					string key = Regex.Match(this.Lines[i - y], @"@\w*").Value;
+					Dictionary<string, object> dict = this.GetWordParams(i - y);
 
-					this.Lines[i - y] = this.Lines[i - y].Remove(0, this.Lines[i - y].IndexOf(key)); // remove whats before param key
-
-					int end = key.Length + 1;
-
-					if (end <= this.Lines[i - y].Length) // if there are params for the word
+					foreach (string key in dict.Keys)
 					{
-						this.Lines[i - y] = this.Lines[i - y].Remove(this.Lines[i - y].IndexOf(key), end); // remove param key from line + one space
-						this.Lines[i - y] = this.Lines[i - y].TrimEnd(';');
-					}
-					else // there are no params for this word
-					{
-						this.Lines[i - y] = "";
-					}
-
-					key = key.TrimStart('@');
-
-					if (!param.ContainsKey(key))
-					{
-						param.Add(key, this.Lines[i - y]);
+						if (!param.ContainsKey(key))
+						{
+							param.Add(key, dict[key]);
+						}
 					}
 				}
 				else
@@ -79,12 +93,21 @@ namespace LuaDocIt
 			List<LuaHook> hfinds = new List<LuaHook>();
 
 			string module = "";
+			string type = "";
 
 			for (int i = 0; i < this.Lines.Length; i++)
 			{
 				if (this.Lines[i].StartsWith("module"))
 				{
 					module = this.GetName(i, "module") + ".";
+
+					break;
+				}
+				else if(this.Lines[i].TrimStart('-').TrimStart().StartsWith("@type"))
+				{
+					Dictionary<string, object> param = GetParams(i);
+
+					type = this.GetWordParams(i)["type"].ToString();
 
 					break;
 				}

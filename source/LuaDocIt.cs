@@ -17,12 +17,12 @@ namespace LuaDocIt
 			{
 				for (int f = 0; f < files[n].Functions.Length; f++)
 				{
-					json = json + files[n].Functions[f].GenerateJson() + ",";
+					json += files[n].Functions[f].GenerateJson() + ",";
 				}
 
 				for (int f = 0; f < files[n].Hooks.Length; f++)
 				{
-					json = json + files[n].Hooks[f].GenerateJson() + ",";
+					json += files[n].Hooks[f].GenerateJson() + ",";
 				}
 			}
 
