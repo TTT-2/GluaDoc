@@ -10,6 +10,9 @@ namespace LuaDocIt
 		public LuaFunction[] Functions;
 		public LuaHook[] Hooks;
 
+		public string Module;
+		public string Type;
+
 		private Dictionary<string, object> GetWordParams(int i)
 		{
 			Dictionary<string, object> param = new Dictionary<string, object>();
@@ -31,7 +34,7 @@ namespace LuaDocIt
 			}
 
 			key = key.TrimStart('@');
-			
+
 			param.Add(key, this.Lines[i]);
 
 			return param;
@@ -87,27 +90,28 @@ namespace LuaDocIt
 
 		public LuaFile(string path)
 		{
+			this.Module = "";
+			this.Type = "";
 			this.Lines = File.ReadAllLines(path);
 
 			List<LuaFunction> finds = new List<LuaFunction>();
 			List<LuaHook> hfinds = new List<LuaHook>();
 
-			string module = "";
-			string type = "";
-
 			for (int i = 0; i < this.Lines.Length; i++)
 			{
+				this.Lines[i] = this.Lines[i].TrimStart(); // clean up every space in front
+
 				if (this.Lines[i].StartsWith("module"))
 				{
-					module = this.GetName(i, "module") + ".";
+					this.Module = this.GetName(i, "module");
 
 					break;
 				}
-				else if(this.Lines[i].TrimStart('-').TrimStart().StartsWith("@type"))
+				else if (this.Lines[i].TrimStart('-').TrimStart().StartsWith("@type"))
 				{
-					Dictionary<string, object> param = GetParams(i);
+					Dictionary<string, object> param = this.GetParams(i);
 
-					type = this.GetWordParams(i)["type"].ToString();
+					this.Type = this.GetWordParams(i)["type"].ToString();
 
 					break;
 				}
@@ -119,7 +123,7 @@ namespace LuaDocIt
 
 				if (this.Lines[i].StartsWith("function") || local) // find line that is supposedly a function
 				{
-					int trimLen = local ? 15 : 9;
+					int trimLen = local ? 14 : 8;
 
 					string name = this.Lines[i];
 					name = name.Remove(0, trimLen); // Remove function text + one space
@@ -130,7 +134,9 @@ namespace LuaDocIt
 
 					Dictionary<string, object> param = this.GetParams(i, local);
 
-					finds.Add(new LuaFunction(module + name, param));
+					string pre = string.IsNullOrEmpty(this.Module) ? "" : (this.Module + "."); // adding module name as prefix
+
+					finds.Add(new LuaFunction(pre + name, param, this.Module, this.Type));
 				}
 				else if (this.Lines[i].StartsWith("hook.Add"))
 				{
