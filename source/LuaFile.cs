@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -64,9 +64,11 @@ namespace LuaDocIt
 
             for (int i = 0; i < this.Lines.Length; i++)
             {
-                if (this.Lines[i].StartsWith("function") || this.Lines[i].StartsWith("local function")) // find line that is supposedly a function
+				bool local = this.Lines[i].StartsWith("local function");
+
+				if (this.Lines[i].StartsWith("function") || local) // find line that is supposedly a function
                 {
-                    int trimLen = this.Lines[i].StartsWith("local function") ? 15 : 9;
+                    int trimLen = local ? 15 : 9;
 
                     string name = this.Lines[i];
                     name = name.Remove(0, trimLen); // Remove function text + one space
@@ -75,7 +77,7 @@ namespace LuaDocIt
 
                     name = name.Remove(name.IndexOf(stripArgs), stripArgs.Length);
 
-                    Dictionary<string, object> param = this.GetParams(i, true);
+                    Dictionary<string, object> param = this.GetParams(i, local);
 
                     finds.Add(new LuaFunction(name, param));
                 }
