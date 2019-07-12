@@ -4,56 +4,56 @@ using System.Text.RegularExpressions;
 
 namespace LuaDocIt
 {
-    internal class LuaFile
-    {
-        public string[] Lines;
-        public LuaFunction[] Functions;
-        public LuaHook[] Hooks;
+	internal class LuaFile
+	{
+		public string[] Lines;
+		public LuaFunction[] Functions;
+		public LuaHook[] Hooks;
 
-        private Dictionary<string, object> GetParams(int i, bool local = false)
-        {
-            Dictionary<string, object> param = new Dictionary<string, object>();
+		private Dictionary<string, object> GetParams(int i, bool local = false)
+		{
+			Dictionary<string, object> param = new Dictionary<string, object>();
 
-            for (int y = 1; y < 10; y++) // run through 10 lines up to find params
-            {
-                if (i - y >= 0 && Regex.IsMatch(this.Lines[i - y], @"@\w*")) // if line has @word in it then process it, otherwise stop ALL search
-                {
-                    string key = Regex.Match(this.Lines[i - y], @"@\w*").Value;
+			for (int y = 1; y < 10; y++) // run through 10 lines up to find params
+			{
+				if (i - y >= 0 && Regex.IsMatch(this.Lines[i - y], @"@\w*")) // if line has @word in it then process it, otherwise stop ALL search
+				{
+					string key = Regex.Match(this.Lines[i - y], @"@\w*").Value;
 
-                    this.Lines[i - y] = this.Lines[i - y].Remove(0, this.Lines[i - y].IndexOf(key)); // remove whats before param key
-                    
-                    int end = key.Length + 1;
+					this.Lines[i - y] = this.Lines[i - y].Remove(0, this.Lines[i - y].IndexOf(key)); // remove whats before param key
 
-                    if (end <= this.Lines[i - y].Length) // if there are params for the word
-                    {
-                        this.Lines[i - y] = this.Lines[i - y].Remove(this.Lines[i - y].IndexOf(key), end); // remove param key from line + one space
-                        this.Lines[i - y] = this.Lines[i - y].TrimEnd(';');
-                    }
-                    else // there are no params for this word
-                    {
-                        this.Lines[i - y] = "";
-                    }
+					int end = key.Length + 1;
 
-                    key = key.TrimStart('@');
+					if (end <= this.Lines[i - y].Length) // if there are params for the word
+					{
+						this.Lines[i - y] = this.Lines[i - y].Remove(this.Lines[i - y].IndexOf(key), end); // remove param key from line + one space
+						this.Lines[i - y] = this.Lines[i - y].TrimEnd(';');
+					}
+					else // there are no params for this word
+					{
+						this.Lines[i - y] = "";
+					}
 
-                    if (!param.ContainsKey(key))
-                    {
-                        param.Add(key, this.Lines[i - y]);
-                    }
-                }
-                else
-                {
-                    break;
-                }
-            }
+					key = key.TrimStart('@');
 
-            if (local && !param.ContainsKey("local"))
-            {
-                param.Add("local", "");
-            }
+					if (!param.ContainsKey(key))
+					{
+						param.Add(key, this.Lines[i - y]);
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
 
-            return param;
-        }
+			if (local && !param.ContainsKey("local"))
+			{
+				param.Add("local", "");
+			}
+
+			return param;
+		}
 
 		private string GetName(int i, string prefix)
 		{
@@ -71,12 +71,12 @@ namespace LuaDocIt
 			return name;
 		}
 
-        public LuaFile(string path)
-        {
-            this.Lines = File.ReadAllLines(path);
+		public LuaFile(string path)
+		{
+			this.Lines = File.ReadAllLines(path);
 
-            List<LuaFunction> finds = new List<LuaFunction>();
-            List<LuaHook> hfinds = new List<LuaHook>();
+			List<LuaFunction> finds = new List<LuaFunction>();
+			List<LuaHook> hfinds = new List<LuaHook>();
 
 			string module = "";
 
@@ -91,35 +91,35 @@ namespace LuaDocIt
 			}
 
 			for (int i = 0; i < this.Lines.Length; i++)
-            {
+			{
 				bool local = this.Lines[i].StartsWith("local function");
 
 				if (this.Lines[i].StartsWith("function") || local) // find line that is supposedly a function
-                {
-                    int trimLen = local ? 15 : 9;
+				{
+					int trimLen = local ? 15 : 9;
 
-                    string name = this.Lines[i];
-                    name = name.Remove(0, trimLen); // Remove function text + one space
+					string name = this.Lines[i];
+					name = name.Remove(0, trimLen); // Remove function text + one space
 
-                    string stripArgs = Regex.Match(this.Lines[i], @"(\(.*)\)").Value;
+					string stripArgs = Regex.Match(this.Lines[i], @"(\(.*)\)").Value;
 
-                    name = name.Remove(name.IndexOf(stripArgs), stripArgs.Length);
+					name = name.Remove(name.IndexOf(stripArgs), stripArgs.Length);
 
-                    Dictionary<string, object> param = this.GetParams(i, local);
+					Dictionary<string, object> param = this.GetParams(i, local);
 
-                    finds.Add(new LuaFunction(module + name, param));
-                }
-                else if (this.Lines[i].StartsWith("hook.Add"))
-                {
-                    string name = this.GetName(i, "hook.Add");
+					finds.Add(new LuaFunction(module + name, param));
+				}
+				else if (this.Lines[i].StartsWith("hook.Add"))
+				{
+					string name = this.GetName(i, "hook.Add");
 					Dictionary<string, object> param = this.GetParams(i);
 
-                    hfinds.Add(new LuaHook(name, param));
-                }
-            }
+					hfinds.Add(new LuaHook(name, param));
+				}
+			}
 
-            this.Functions = finds.ToArray();
-            this.Hooks = hfinds.ToArray();
-        }
-    }
+			this.Functions = finds.ToArray();
+			this.Hooks = hfinds.ToArray();
+		}
+	}
 }
