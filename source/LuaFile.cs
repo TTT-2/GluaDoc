@@ -10,7 +10,7 @@ namespace LuaDocIt
         public LuaFunction[] Functions;
         public LuaHook[] Hooks;
 
-        private Dictionary<string, object> GetParams(int i)
+        private Dictionary<string, object> GetParams(int i, bool local = false)
         {
             Dictionary<string, object> param = new Dictionary<string, object>();
 
@@ -24,13 +24,15 @@ namespace LuaDocIt
                     
                     int end = key.Length + 1;
 
-                    if (end > this.Lines[i - y].Length)
+                    if (end <= this.Lines[i - y].Length) // if there are params for the word
                     {
-                        continue;
+                        this.Lines[i - y] = this.Lines[i - y].Remove(this.Lines[i - y].IndexOf(key), end); // remove param key from line + one space
+                        this.Lines[i - y] = this.Lines[i - y].TrimEnd(';');
                     }
-
-                    this.Lines[i - y] = this.Lines[i - y].Remove(this.Lines[i - y].IndexOf(key), end); // remove param key from line + one space
-                    this.Lines[i - y] = this.Lines[i - y].TrimEnd(';');
+                    else // there are no params for this word
+                    {
+                        this.Lines[i - y] = "";
+                    }
 
                     key = key.TrimStart('@');
 
@@ -43,6 +45,11 @@ namespace LuaDocIt
                 {
                     break;
                 }
+            }
+
+            if (local && !param.ContainsKey("local"))
+            {
+                param.Add("local", "");
             }
 
             return param;
@@ -68,7 +75,7 @@ namespace LuaDocIt
 
                     name = name.Remove(name.IndexOf(stripArgs), stripArgs.Length);
 
-                    Dictionary<string, object> param = this.GetParams(i);
+                    Dictionary<string, object> param = this.GetParams(i, true);
 
                     finds.Add(new LuaFunction(name, param));
                 }

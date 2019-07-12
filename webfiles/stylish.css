@@ -114,10 +114,10 @@ a
 
 ::-webkit-scrollbar-track
 {
-  	background: rgb(31, 31, 34);
+		background: rgb(31, 31, 34);
 }
 
 ::-webkit-scrollbar-thumb
 {
-  	background: rgb(52, 52, 57);
+		background: rgb(52, 52, 57);
 }
