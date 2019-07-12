@@ -1,3 +1,6 @@
 source/.vs/
 source/bin/
 source/obj/
+output/
+LuaDocIt.exe
+LuaDocIt.pdb

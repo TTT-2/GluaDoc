@@ -21,12 +21,23 @@ namespace LuaDocIt
                     string key = Regex.Match(this.Lines[i - y], @"@\w*").Value;
 
                     this.Lines[i - y] = this.Lines[i - y].Remove(0, this.Lines[i - y].IndexOf(key)); // remove whats before param key
-                    this.Lines[i - y] = this.Lines[i - y].Remove(this.Lines[i - y].IndexOf(key), key.Length + 1); // remove param key from line + one space
+                    
+                    int end = key.Length + 1;
+
+                    if (end > this.Lines[i - y].Length)
+                    {
+                        continue;
+                    }
+
+                    this.Lines[i - y] = this.Lines[i - y].Remove(this.Lines[i - y].IndexOf(key), end); // remove param key from line + one space
                     this.Lines[i - y] = this.Lines[i - y].TrimEnd(';');
 
                     key = key.TrimStart('@');
 
-                    param.Add(key, this.Lines[i - y]);
+                    if (!param.ContainsKey(key))
+                    {
+                        param.Add(key, this.Lines[i - y]);
+                    }
                 }
                 else
                 {

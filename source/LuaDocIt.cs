@@ -66,7 +66,7 @@ namespace LuaDocIt
                 Text = "LuaDocIt"
             };
             mainMenu.SetBounds(0, 0, 800, 600);
-            mainMenu.Icon = new Icon("../../../content/icon.ico");
+            mainMenu.Icon = new Icon("content/icon.ico");
 
             Panel fileTreePanel = new Panel
             {

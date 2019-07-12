@@ -5,12 +5,13 @@
         $funcs = json_decode($f, true);
 
         //strip undocumented
-        foreach( $funcs as $n=>$data )
+        foreach($funcs as $n => $data)
         {
-            $funcs[$n] = count( $data["param"] ) > 0 ? $funcs[$n] : false;
-            if( !$funcs[$n] )
+            $funcs[$n] = count($data["param"]) > 0 ? $funcs[$n] : false;
+			
+            if(!$funcs[$n])
             {
-                unset( $funcs[$n] );
+                unset($funcs[$n]);
             }
         }
     ?>
@@ -26,12 +27,12 @@
 	<body>
         <div id = "navlist">
             <?php
-                foreach( $funcs as $n=>$data )
+                foreach($funcs as $n => $data)
                 {
                     echo
                     '
                         <a href = "?func=' . $data["name"] . '">
-                            <span class = "navlist-element ' . strtolower( $data["param"]["realm"] ) . '">
+                            <span class = "navlist-element ' . strtolower(isset($data["param"]["realm"]) ? $data["param"]["realm"] : "shared") . '">
                                 ' . $data["name"] . '
                             </span>
                         </a>
@@ -43,24 +44,27 @@
             <div id = "code">
                 <?php
                     $i = 0;
-                    if( isset( $_GET ) && isset( $_GET["func"] ) )
+					
+                    if(isset($_GET ) && isset($_GET["func"]))
                     {
                         foreach( $funcs as $n=>$data )
                         {
-                            if( $data["name"] == $_GET["func"] )
+                            if($data["name"] == $_GET["func"])
                             {
                                 $i = $n;
+								
                                 break;
                             }
                         }
                     }
 
-                    echo
-                    '
-                        <span class = "code-funcname ' . strtolower( $data["param"]["realm"] ) . '">' . $funcs[$i]["name"] . '</span><span class = "code-funcargs">( ' . (isset($funcs[$i]["param"]["args"]) ? $funcs[$i]["param"]["args"] : "" ) . ' )</span><br>
-                        <span class = "code-desc">DESC: ' . $funcs[$i]["param"]["desc"] . '</span><br>
-                        <span class = "code-note">NOTE: ' . (isset($funcs[$i]["param"]["note"]) ? $funcs[$i]["param"]["note"] : "None" ) . '</span>
-                    ';
+                    echo '<span class = "code-funcname ' . strtolower(isset($data["param"]["realm"]) ? $data["param"]["realm"] : "shared") . '">' . $funcs[$i]["name"] . '</span><span class = "code-funcargs">( ' . (isset($funcs[$i]["param"]["args"]) ? $funcs[$i]["param"]["args"] : "" ) . ' )</span><br>';
+                    
+					if (isset($funcs[$i]["param"]["desc"])) :
+						echo '<span class = "code-desc">DESC: ' . $funcs[$i]["param"]["desc"] . '</span><br>';
+					endif;
+					
+                    echo '<span class = "code-note">NOTE: ' . (isset($funcs[$i]["param"]["note"]) ? $funcs[$i]["param"]["note"] : "None" ) . '</span>';
                 ?>
             </div>
         </div>
