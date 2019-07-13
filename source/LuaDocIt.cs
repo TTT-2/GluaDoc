@@ -10,24 +10,38 @@ namespace LuaDocIt
 {
 	internal static class LuaDocIt
 	{
-		private static string JsonASC(Dictionary<string, List<LuaSortable>> listOb)
+		private static string JsonASC(Dictionary<string, Dictionary<string, List<LuaSortable>>> listOb)
 		{
 			foreach (string key in listOb.Keys)
 			{
-				listOb[key].Sort((x, y) => string.Compare(x.name, y.name));
+				foreach (string key2 in listOb[key].Keys)
+				{
+					listOb[key][key2].Sort((x, y) => string.Compare(x.name, y.name));
+				}
 			}
 
-			return JsonConvert.SerializeObject(listOb);
+			return JsonConvert.SerializeObject(listOb,
+				Formatting.Indented,
+				new JsonSerializerSettings
+				{
+					NullValueHandling = NullValueHandling.Ignore
+				}
+			);
 		}
 
-		private static string GetCategory(LuaSortable file)
+		private static string GetType(LuaSortable file)
 		{
-			return file.category ?? "Missing Category";
+			return file.type ?? "";
+		}
+
+		private static string GetTypeName(LuaSortable file)
+		{
+			return file.typeName ?? "";
 		}
 
 		private static void GenerateDocumentation(LuaFile[] files, string path)
 		{
-			Dictionary<string, List<LuaSortable>> list = new Dictionary<string, List<LuaSortable>>();
+			Dictionary<string, Dictionary<string, List<LuaSortable>>> list = new Dictionary<string, Dictionary<string, List<LuaSortable>>>();
 
 			for (int n = 0; n < files.Length; n++)
 			{
@@ -41,19 +55,36 @@ namespace LuaDocIt
 				{
 					for (int f = 0; f < loop.Length; f++)
 					{
-						string category = GetCategory(loop[f]);
+						Dictionary<string, List<LuaSortable>> subList;
 						List<LuaSortable> luaSortables;
 
-						if (list.ContainsKey(category))
+						string type = GetType(loop[f]);
+
+						// get the sub list (dict)
+						if (list.ContainsKey(type))
 						{
-							luaSortables = list[category];
+							subList = list[type];
+						}
+						else
+						{
+							subList = new Dictionary<string, List<LuaSortable>>();
+							list.Add(type, subList);
+						}
+
+						string typeName = GetTypeName(loop[f]);
+
+						// get the list
+						if (subList.ContainsKey(typeName))
+						{
+							luaSortables = subList[typeName];
 						}
 						else
 						{
 							luaSortables = new List<LuaSortable>();
-							list.Add(category, luaSortables);
+							subList.Add(typeName, luaSortables);
 						}
 
+						// finally add the file
 						luaSortables.Add(loop[f]);
 					}
 				}

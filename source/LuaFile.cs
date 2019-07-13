@@ -10,8 +10,8 @@ namespace LuaDocIt
 		public LuaFunction[] Functions;
 		public LuaHook[] Hooks;
 
-		public string Module;
 		public string Type;
+		public string TypeName;
 
 		private string GetLineParam(int i)
 		{
@@ -103,8 +103,8 @@ namespace LuaDocIt
 
 		public LuaFile(string path, string relPath)
 		{
-			this.Module = "";
 			this.Type = "";
+			this.TypeName = "";
 			this.Lines = File.ReadAllLines(path);
 
 			List<LuaFunction> finds = new List<LuaFunction>();
@@ -116,21 +116,23 @@ namespace LuaDocIt
 
 				if (this.Lines[i].StartsWith("module")) // module("...", ...) support
 				{
-					this.Module = this.GetName(i, "module");
+					this.Type = "module";
+					this.TypeName = this.GetName(i, "module");
 
 					break;
 				}
-				else if (this.GetLineParam(i).Equals("type")) // @type support
+				else if (this.GetLineParam(i).Equals("class")) // @class support
 				{
 					Dictionary<string, object> param = this.GetParams(i);
 
-					this.Type = this.GetWordParams(i)["type"].ToString();
+					this.Type = "class";
+					this.Type = this.GetWordParams(i)["class"].ToString();
 
 					break;
 				}
 			}
 
-			string section = "";
+			string section = null;
 
 			for (int i = 0; i < this.Lines.Length; i++)
 			{
@@ -156,9 +158,9 @@ namespace LuaDocIt
 
 					Dictionary<string, object> param = this.GetParams(i, local);
 
-					string pre = string.IsNullOrEmpty(this.Module) ? "" : (this.Module + "."); // adding module name as prefix
+					string pre = (this.Type.Equals("module")) ? (this.TypeName + ".") : ""; // adding module name as prefix
 
-					finds.Add(new LuaFunction(pre + name, param, this.Module, this.Type, section, relPath, i + 1, this.Module ?? this.Type));
+					finds.Add(new LuaFunction(pre + name, param, section, this.Type, this.TypeName, relPath, i + 1));
 				}
 				else
 				{
@@ -175,7 +177,7 @@ namespace LuaDocIt
 							string name = this.GetName(i, hookIdentifier);
 							Dictionary<string, object> param = this.GetParams(i);
 
-							hfinds.Add(new LuaHook(name, param, hookIdentifier, relPath, i + 1, "hooks"));
+							hfinds.Add(new LuaHook(name, param, hookIdentifier, param.ContainsKey("type") ? param["type"].ToString() : "", relPath, i + 1)); // @type is used to set the typeName of an hook
 						}
 					}
 				}
