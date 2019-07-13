@@ -21,7 +21,6 @@ namespace LuaDocIt
 			}
 
 			return JsonConvert.SerializeObject(listOb,
-				Formatting.Indented,
 				new JsonSerializerSettings
 				{
 					NullValueHandling = NullValueHandling.Ignore
@@ -178,80 +177,87 @@ namespace LuaDocIt
 					fileTreePanel.Invalidate();
 				}
 
-				string[] files = BuildFileTree(fileSelection.SelectedPath);
-
-				LuaFile[] luaFileObj = PrepLuaFiles(files, fileSelection.SelectedPath);
-
-				for (int i = 0; i < files.Length; i++)
+				try
 				{
-					PictureBox icon = new PictureBox
-					{
-						Image = Image.FromFile("content/lua_icon.png"),
-						Size = new Size(24, 24),
-						SizeMode = PictureBoxSizeMode.StretchImage,
-						Parent = fileTreePanel,
-						Left = 5,
-						Top = 5 + (29 * i)
-					};
+					string[] files = BuildFileTree(fileSelection.SelectedPath);
 
-					Label name = new Label
-					{
-						AutoSize = true,
-						Text = Path.GetFileName(files[i]),
-						Parent = fileTreePanel,
-						Left = 34,
-						Top = 10 + (29 * i)
-					};
+					LuaFile[] luaFileObj = PrepLuaFiles(files, fileSelection.SelectedPath);
 
-					Label total = new Label
+					for (int i = 0; i < files.Length; i++)
 					{
-						AutoSize = true,
-						Text = $"Elements: {luaFileObj[i].Functions.Length + luaFileObj[i].Hooks.Length}",
-						ForeColor = Color.Blue,
-						Parent = fileTreePanel,
-						Top = 10 + (29 * i),
-						Left = name.Left + name.Width + 5
-					};
-
-					int goodf = 0;
-
-					for (int f = 0; f < luaFileObj[i].Functions.Length; f++)
-					{
-						if (luaFileObj[i].Functions[f].param.Count > 0)
+						PictureBox icon = new PictureBox
 						{
-							goodf++;
-						}
-					}
+							Image = Image.FromFile("content/lua_icon.png"),
+							Size = new Size(24, 24),
+							SizeMode = PictureBoxSizeMode.StretchImage,
+							Parent = fileTreePanel,
+							Left = 5,
+							Top = 5 + (29 * i)
+						};
 
-					for (int f = 0; f < luaFileObj[i].Hooks.Length; f++)
-					{
-						if (luaFileObj[i].Hooks[f].param.Count > 0)
+						Label name = new Label
 						{
-							goodf++;
+							AutoSize = true,
+							Text = Path.GetFileName(files[i]),
+							Parent = fileTreePanel,
+							Left = 34,
+							Top = 10 + (29 * i)
+						};
+
+						Label total = new Label
+						{
+							AutoSize = true,
+							Text = $"Elements: {luaFileObj[i].Functions.Length + luaFileObj[i].Hooks.Length}",
+							ForeColor = Color.Blue,
+							Parent = fileTreePanel,
+							Top = 10 + (29 * i),
+							Left = name.Left + name.Width + 5
+						};
+
+						int goodf = 0;
+
+						for (int f = 0; f < luaFileObj[i].Functions.Length; f++)
+						{
+							if (luaFileObj[i].Functions[f].param.Count > 0)
+							{
+								goodf++;
+							}
 						}
+
+						for (int f = 0; f < luaFileObj[i].Hooks.Length; f++)
+						{
+							if (luaFileObj[i].Hooks[f].param.Count > 0)
+							{
+								goodf++;
+							}
+						}
+
+						int badf = luaFileObj[i].Functions.Length + luaFileObj[i].Hooks.Length - goodf;
+
+						Label good = new Label
+						{
+							AutoSize = true,
+							Text = goodf > 0 ? $"To-Document: {goodf}" : "",
+							ForeColor = Color.Green,
+							Parent = fileTreePanel,
+							Top = 10 + (29 * i),
+							Left = total.Left + total.Width + 2
+						};
+
+						Label bad = new Label
+						{
+							AutoSize = true,
+							Text = badf > 0 ? $"To-Skip: {badf}" : "",
+							ForeColor = Color.Red,
+							Parent = fileTreePanel,
+							Top = 10 + (29 * i),
+							Left = good.Left + good.Width + 2
+						};
 					}
-
-					int badf = luaFileObj[i].Functions.Length + luaFileObj[i].Hooks.Length - goodf;
-
-					Label good = new Label
-					{
-						AutoSize = true,
-						Text = goodf > 0 ? $"To-Document: {goodf}" : "",
-						ForeColor = Color.Green,
-						Parent = fileTreePanel,
-						Top = 10 + (29 * i),
-						Left = total.Left + total.Width + 2
-					};
-
-					Label bad = new Label
-					{
-						AutoSize = true,
-						Text = badf > 0 ? $"To-Skip: {badf}" : "",
-						ForeColor = Color.Red,
-						Parent = fileTreePanel,
-						Top = 10 + (29 * i),
-						Left = good.Left + good.Width + 2
-					};
+				}
+				catch
+				{
+					// error handling
 				}
 			};
 

@@ -13,7 +13,7 @@
 		$allData = array();
 		
 		foreach($jsonData as $n => $types)
-		{
+		{	
 			foreach($types as $type => $typeNames)
 			{
 				foreach($typeNames as $typeName => $data)
@@ -225,7 +225,7 @@
 						
 						$args = substr($args, 0, -2);
 						
-						$args = str_replace("UNDEFINED", "?", $args);
+						$args = str_replace("_UDF_PRM_", "?", $args);
 					}
 					
 					echo '<span class="code-funcname ' . strtolower($requestedFunction["param"]["realm"]) . '">' . $requestedFunction["name"] . '</span><span class="code-funcargs">( ' . $args . ' )</span><br>';

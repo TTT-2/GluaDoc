@@ -179,15 +179,13 @@ namespace LuaDocIt
 
 					if (stripArgs.Length > 0)
 					{
-						string[] split = stripArgs.Split(',');
-
-						foreach (string part in split)
+						foreach (string part in stripArgs.Split(','))
 						{
 							string p = part.Trim();
 
 							if (!list.Contains(p)) // just insert, if not already documented
 							{
-								list.Add("UNDEFINED " + p);
+								list.Add("_UDF_PRM_ " + p);
 							}
 						}
 					}
@@ -208,8 +206,44 @@ namespace LuaDocIt
 					{
 						if (this.Lines[i].StartsWith(hookIdentifier))
 						{
+							string stripArgs = Regex.Match(this.Lines[i], @"(\(.*)\)").Value;
 							string name = this.GetName(i, hookIdentifier);
 							Dictionary<string, object> param = this.GetParams(i);
+
+							// add params of the function if not already inserted
+							List<string> list = this.AddOrCreateList(param, "param");
+
+							stripArgs = stripArgs.TrimStart('(').TrimEnd(')'); // remove ( and )
+
+							string access = hookIdentifier.Equals("hook.Call") ? null : "GLOBAL";
+							bool jump = false;
+
+							if (stripArgs.Length > 0)
+							{
+								foreach (string part in stripArgs.Split(','))
+								{
+									if (!jump)
+									{
+										jump = true;
+
+										continue;
+									}
+
+									string p = part.Trim();
+
+									if (access == null)
+									{
+										access = p.Equals("nil") ? "GLOBAL" : p;
+
+										continue;
+									}
+
+									if (!list.Contains(p)) // just insert, if not already documented
+									{
+										list.Add("_UDF_PRM_ " + p);
+									}
+								}
+							}
 
 							hfinds.Add(new LuaHook(name, param, hookIdentifier, param.ContainsKey("type") ? param["type"].ToString() : "", relPath, i + 1)); // @type is used to set the typeName of an hook
 						}
