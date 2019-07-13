@@ -54,7 +54,7 @@ namespace LuaDocIt
 							list.Add(category, luaSortables);
 						}
 
-						luaSortables.Add(files[n].Functions[f]);
+						luaSortables.Add(loop[f]);
 					}
 				}
 			}
