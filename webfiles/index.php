@@ -73,11 +73,12 @@
 				//preprocess name
 				$name = $data["name"];
 				$name_parts = explode('.', $name);
+				$name_type = explode(':', $name);
 				$name_print = '<a href="?func=' . $name . '"><span class="navlist-element wrapper">';
 
 				for ($i = 0; $i < count($name_parts) - 1; $i++) 
 				{
-					$name_print .= '<span class="navlist-element prefix">' . $name_parts[$i];
+					$name_print .= '<span class="navlist-element prefix type-module">' . $name_parts[$i];
 					
 					if ($i < count($name_parts) - 1) {
 						$name_print .= '.';
@@ -86,7 +87,13 @@
 					$name_print .= '</span>';
 				}
 				
-				$name_print .= '<span class="navlist-element ' . strtolower($data["realm"]) . '">' . end($name_parts) . '</span></span>';
+				if (count($name_type) > 1)
+				{
+					$name_print .= '<span class="navlist-element prefix hook">' . $name_type[1] . ':</span>';
+					$isType = true;
+				}
+				
+				$name_print .= '<span class="navlist-element ' . strtolower($data["realm"]) . '">' . (isset($isType) ? end($name_type) : end($name_parts)) . '</span></span>';
 				$name_print .= '</a>';
 
 				echo $name_print;
