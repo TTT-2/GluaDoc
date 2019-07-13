@@ -150,8 +150,9 @@ namespace LuaDocIt
 					name = name.TrimStart(); // remove spaces in front
 
 					string stripArgs = Regex.Match(this.Lines[i], @"(\(.*)\)").Value;
+					int pos = name.IndexOf(stripArgs);
 
-					name = name.Remove(name.IndexOf(stripArgs), stripArgs.Length);
+					name = name.Remove(pos, name.Length - pos); // remove rest of the line
 
 					Dictionary<string, object> param = this.GetParams(i, local);
 
