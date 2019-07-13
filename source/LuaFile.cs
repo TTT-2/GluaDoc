@@ -145,7 +145,8 @@ namespace LuaDocIt
 					int trimLen = local ? 14 : 8;
 
 					string name = this.Lines[i];
-					name = name.Remove(0, trimLen); // Remove function text + one space
+					name = name.Remove(0, trimLen); // remove function text
+					name = name.TrimStart(); // remove spaces in front
 
 					string stripArgs = Regex.Match(this.Lines[i], @"(\(.*)\)").Value;
 
