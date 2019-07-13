@@ -95,6 +95,7 @@ namespace LuaDocIt
 			name = name.TrimStart('('); // remove ( that starts with each hook.Add, hook.Call
 			name = name.TrimStart(); // remove eventual bonus space
 			name = name.TrimStart('"');
+			name = name.TrimEnd(')'); // remove ) that ends with hook.Run if there is just one param
 			name = name.TrimEnd('"');
 
 			return name;
