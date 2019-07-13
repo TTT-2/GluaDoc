@@ -1,28 +1,20 @@
 using System.Collections.Generic;
-using System.Web.Script.Serialization;
 
 namespace LuaDocIt
 {
-	internal class LuaFunction
+	internal class LuaFunction : LuaSortable
 	{
-		public string name;
-		public Dictionary<string, object> param = new Dictionary<string, object>();
-		public string module;
-		public string type;
-		public string section;
+		public Dictionary<string, object> param { get; set; } = new Dictionary<string, object>();
+		public string module { get; set; }
+		public string type { get; set; }
+		public string section { get; set; }
 
-		public LuaFunction(string name, Dictionary<string, object> param, string module, string type, string section)
+		public LuaFunction(string name, Dictionary<string, object> param, string module, string type, string section) : base(name)
 		{
-			this.name = name;
 			this.param = param;
 			this.module = module;
 			this.type = type;
 			this.section = section;
-		}
-
-		public string GenerateJson()
-		{
-			return new JavaScriptSerializer().Serialize(this);
 		}
 	}
 }

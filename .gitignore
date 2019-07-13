@@ -1,6 +1,13 @@
 source/.vs/
 source/bin/
 source/obj/
+source/packages/
+source/packages.config
+
 output/
+
 LuaDocIt.exe
 LuaDocIt.pdb
+
+Newtonsoft\.Json\.dll
+Newtonsoft\.Json\.xml

@@ -75,7 +75,8 @@
 				$name_parts = explode('.', $name);
 				$name_print = '<a href="?func=' . $name . '"><span class="navlist-element wrapper">';
 
-				for ($i = 0; $i < count($name_parts) - 1; $i++) {
+				for ($i = 0; $i < count($name_parts) - 1; $i++) 
+				{
 					$name_print .= '<span class="navlist-element prefix">' . $name_parts[$i];
 					
 					if ($i < count($name_parts) - 1) {
@@ -117,10 +118,10 @@
 
 					if(isset($funcs[$i]["param"]["desc"]))
 					{
-						echo '<span class="code-desc">DESC: ' . $requestedFunction["param"]["desc"] . '</span><br>';
+						echo '<span class="code-desc">Desc: ' . $requestedFunction["param"]["desc"] . '</span><br>';
 					}
 
-					echo '<span class="code-note">NOTE: ' . (isset($requestedFunction["param"]["note"]) ? $requestedFunction["param"]["note"] : "None" ) . '</span>';
+					echo '<span class="code-note">Note: ' . (isset($requestedFunction["param"]["note"]) ? $requestedFunction["param"]["note"] : "None" ) . '</span>';
 				}
 			?>
 		</div>

@@ -1,36 +1,42 @@
+using Newtonsoft.Json;
 using StylishForms;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace LuaDocIt
 {
 	internal static class LuaDocIt
 	{
+		private static string JsonASC(List<LuaSortable> listOb)
+		{
+			IOrderedEnumerable<LuaSortable> descListOb = listOb.OrderBy(x => x.name);
+
+			return JsonConvert.SerializeObject(descListOb);
+		}
+
 		private static void GenerateDocumentation(LuaFile[] files, string path)
 		{
-			string json = "[";
+			List<LuaSortable> list = new List<LuaSortable>();
 
 			for (int n = 0; n < files.Length; n++)
 			{
 				for (int f = 0; f < files[n].Functions.Length; f++)
 				{
-					json += files[n].Functions[f].GenerateJson() + ",";
+					list.Add(files[n].Functions[f]);
 				}
 
 				for (int f = 0; f < files[n].Hooks.Length; f++)
 				{
-					json += files[n].Hooks[f].GenerateJson() + ",";
+					list.Add(files[n].Hooks[f]);
 				}
 			}
 
-			json = json.TrimEnd(',');
-			json += "]";
-
 			Directory.CreateDirectory($"output/{path}");
-			File.WriteAllText($"output/{path}/documentation.json", json);
+			File.WriteAllText($"output/{path}/documentation.json", JsonASC(list));
 
 			//copy web files
 			foreach (string s in Directory.GetFiles("webfiles/"))
