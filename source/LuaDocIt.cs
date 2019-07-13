@@ -47,13 +47,17 @@ namespace LuaDocIt
 			MessageBox.Show($"Your documentation has been generated succesfully in 'output/{path}/'\n\nWeb files have also been copied to your folder, you can upload it all to your website.");
 		}
 
-		private static LuaFile[] PrepLuaFiles(string[] files)
+		private static LuaFile[] PrepLuaFiles(string[] files, string folder)
 		{
 			List<LuaFile> generated = new List<LuaFile>();
 
 			for (int n = 0; n < files.Length; n++)
 			{
-				generated.Add(new LuaFile(files[n]));
+				string relPath = files[n].Remove(0, folder.Length);
+				relPath = relPath.TrimStart('\\');
+				relPath = relPath.Replace('\\', '/');
+
+				generated.Add(new LuaFile(files[n], relPath));
 			}
 
 			return generated.ToArray();
@@ -121,7 +125,7 @@ namespace LuaDocIt
 
 				string[] files = BuildFileTree(fileSelection.SelectedPath);
 
-				LuaFile[] luaFileObj = PrepLuaFiles(files);
+				LuaFile[] luaFileObj = PrepLuaFiles(files, fileSelection.SelectedPath);
 
 				for (int i = 0; i < files.Length; i++)
 				{
@@ -216,7 +220,7 @@ namespace LuaDocIt
 			generateDoc.Click += (sender, e) =>
 			{
 				string[] files = BuildFileTree(fileSelection.SelectedPath);
-				LuaFile[] luaFileObj = PrepLuaFiles(files);
+				LuaFile[] luaFileObj = PrepLuaFiles(files, fileSelection.SelectedPath);
 
 				GenerateDocumentation(luaFileObj, docName.Text);
 			};

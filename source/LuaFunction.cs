@@ -9,7 +9,7 @@ namespace LuaDocIt
 		public string type { get; set; }
 		public string section { get; set; }
 
-		public LuaFunction(string name, Dictionary<string, object> param, string module, string type, string section) : base(name)
+		public LuaFunction(string name, Dictionary<string, object> param, string module, string type, string section, string path, int index) : base(name, path, index)
 		{
 			this.param = param;
 			this.module = module;

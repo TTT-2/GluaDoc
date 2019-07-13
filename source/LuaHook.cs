@@ -6,7 +6,7 @@ namespace LuaDocIt
 	{
 		public Dictionary<string, object> param { get; set; } = new Dictionary<string, object>();
 
-		public LuaHook(string name, Dictionary<string, object> param) : base(name)
+		public LuaHook(string name, Dictionary<string, object> param, string path, int line) : base(name, path, line)
 		{
 			this.param = param;
 		}

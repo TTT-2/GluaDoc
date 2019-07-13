@@ -128,7 +128,8 @@
 						echo '<span class="code-desc">Desc: ' . $requestedFunction["param"]["desc"] . '</span><br>';
 					}
 
-					echo '<span class="code-note">Note: ' . (isset($requestedFunction["param"]["note"]) ? $requestedFunction["param"]["note"] : "None" ) . '</span>';
+					echo '<span class="code-note">Note: ' . (isset($requestedFunction["param"]["note"]) ? $requestedFunction["param"]["note"] : "None" ) . '</span><br />';
+					echo '<span class="code-source">Source: <a href="https://github.com/TTT-2/TTT2/tree/master/' . $requestedFunction["path"] . '#L' . $requestedFunction["line"] . '">' . $requestedFunction["path"] . ':' . $requestedFunction["line"] . '</a></span>';
 				}
 			?>
 		</div>

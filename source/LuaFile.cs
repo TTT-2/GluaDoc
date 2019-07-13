@@ -100,7 +100,7 @@ namespace LuaDocIt
 			return name;
 		}
 
-		public LuaFile(string path)
+		public LuaFile(string path, string relPath)
 		{
 			this.Module = "";
 			this.Type = "";
@@ -156,14 +156,14 @@ namespace LuaDocIt
 
 					string pre = string.IsNullOrEmpty(this.Module) ? "" : (this.Module + "."); // adding module name as prefix
 
-					finds.Add(new LuaFunction(pre + name, param, this.Module, this.Type, section));
+					finds.Add(new LuaFunction(pre + name, param, this.Module, this.Type, section, relPath, i + 1));
 				}
 				else if (this.Lines[i].StartsWith("hook.Add"))
 				{
 					string name = this.GetName(i, "hook.Add");
 					Dictionary<string, object> param = this.GetParams(i);
 
-					hfinds.Add(new LuaHook(name, param));
+					hfinds.Add(new LuaHook(name, param, relPath, i + 1));
 				}
 			}
 
