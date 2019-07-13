@@ -4,34 +4,58 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace LuaDocIt
 {
 	internal static class LuaDocIt
 	{
-		private static string JsonASC(List<LuaSortable> listOb)
+		private static string JsonASC(Dictionary<string, List<LuaSortable>> listOb)
 		{
-			IOrderedEnumerable<LuaSortable> descListOb = listOb.OrderBy(x => x.name);
+			foreach (string key in listOb.Keys)
+			{
+				listOb[key].Sort((x, y) => string.Compare(x.name, y.name));
+			}
 
-			return JsonConvert.SerializeObject(descListOb);
+			return JsonConvert.SerializeObject(listOb);
+		}
+
+		private static string GetCategory(LuaSortable file)
+		{
+			return file.category ?? "Missing Category";
 		}
 
 		private static void GenerateDocumentation(LuaFile[] files, string path)
 		{
-			List<LuaSortable> list = new List<LuaSortable>();
+			Dictionary<string, List<LuaSortable>> list = new Dictionary<string, List<LuaSortable>>();
 
 			for (int n = 0; n < files.Length; n++)
 			{
-				for (int f = 0; f < files[n].Functions.Length; f++)
+				LuaSortable[][] loopList =
 				{
-					list.Add(files[n].Functions[f]);
-				}
+					files[n].Functions,
+					files[n].Hooks
+				};
 
-				for (int f = 0; f < files[n].Hooks.Length; f++)
+				foreach (LuaSortable[] loop in loopList)
 				{
-					list.Add(files[n].Hooks[f]);
+					for (int f = 0; f < loop.Length; f++)
+					{
+						string category = GetCategory(loop[f]);
+						List<LuaSortable> luaSortables;
+
+						if (list.ContainsKey(category))
+						{
+							luaSortables = list[category];
+						}
+						else
+						{
+							luaSortables = new List<LuaSortable>();
+							list.Add(category, luaSortables);
+						}
+
+						luaSortables.Add(files[n].Functions[f]);
+					}
 				}
 			}
 

@@ -156,19 +156,31 @@ namespace LuaDocIt
 
 					string pre = string.IsNullOrEmpty(this.Module) ? "" : (this.Module + "."); // adding module name as prefix
 
-					finds.Add(new LuaFunction(pre + name, param, this.Module, this.Type, section, relPath, i + 1));
+					finds.Add(new LuaFunction(pre + name, param, this.Module, this.Type, section, relPath, i + 1, this.Module ?? this.Type));
 				}
-				else if (this.Lines[i].StartsWith("hook.Add"))
+				else
 				{
-					string name = this.GetName(i, "hook.Add");
-					Dictionary<string, object> param = this.GetParams(i);
+					string[] hookIdentifiers =
+					{
+						"hook.Run",
+						"hook.Call"
+					};
 
-					hfinds.Add(new LuaHook(name, param, relPath, i + 1));
+					foreach (string hookIdentifier in hookIdentifiers)
+					{
+						if (this.Lines[i].StartsWith(hookIdentifier))
+						{
+							string name = this.GetName(i, hookIdentifier);
+							Dictionary<string, object> param = this.GetParams(i);
+
+							hfinds.Add(new LuaHook(name, param, hookIdentifier, relPath, i + 1, "hooks"));
+						}
+					}
 				}
-			}
 
-			this.Functions = finds.ToArray();
-			this.Hooks = hfinds.ToArray();
+				this.Functions = finds.ToArray();
+				this.Hooks = hfinds.ToArray();
+			}
 		}
 	}
 }

@@ -12,40 +12,70 @@
 		$jsonData = \JsonMachine\JsonMachine::fromFile('documentation.json');
 		$allData = array();
 		
-		foreach($jsonData as $n => $data)
+		foreach($jsonData as $n => $category)
 		{
-			if((count($data["param"]) > 0 || !$GLOBALS["excludeUndocumentedFunctions"]) && !isset($data["param"]["local"])) // exclude unset functions or @local functions
+			foreach($category as $n2 => $data)
 			{
-				if (!isset($data["param"]["realm"]))
+				if((count($data["param"]) > 0 || !$GLOBALS["excludeUndocumentedFunctions"]) && !isset($data["param"]["local"])) // exclude unset functions or @local functions
 				{
-					$data["param"]["realm"] = "shared";
+					if (!isset($data["param"]["realm"]))
+					{
+						$data["param"]["realm"] = "shared";
+					}
+					
+					array_push($allData, $data);
 				}
-				
-				array_push($allData, $data);
 			}
 		}
 		
 		return $allData;
 	}
+	
+	function getCategories()
+	{
+		$jsonData = \JsonMachine\JsonMachine::fromFile('documentation.json');
+		$cats = array();
+		
+		foreach($jsonData as $name => $category)
+		{
+			foreach($category as $n => $data)
+			{
+				if(count($data) > 0)
+				{
+					array_push($cats, $name);
+					
+					break;
+				}
+			}
+		}
+		
+		return $cats;
+	}
 
-	function getFunctions()
+	function getFunctions($cat)
 	{
 		$jsonData = \JsonMachine\JsonMachine::fromFile('documentation.json');
 		$fns = array();
 		
-		foreach($jsonData as $n => $data)
+		foreach($jsonData as $name => $category)
 		{
-			if((count($data["param"]) > 0 || !$GLOBALS["excludeUndocumentedFunctions"]) && !isset($data["param"]["local"])) // exclude unset functions or @local functions
+			if($name == $cat || !isset($cat))
 			{
-				if (!isset($data["param"]["realm"]))
+				foreach($category as $n => $data)
 				{
-					$data["param"]["realm"] = "shared";
+					if((count($data["param"]) > 0 || !$GLOBALS["excludeUndocumentedFunctions"]) && !isset($data["param"]["local"])) // exclude unset functions or @local functions
+					{
+						if(!isset($data["param"]["realm"]))
+						{
+							$data["param"]["realm"] = "shared";
+						}
+						
+						array_push($fns, array(
+							"name" => $data["name"], 
+							"realm" => $data["param"]["realm"]
+						));
+					}
 				}
-				
-				array_push($fns, array(
-					"name" => $data["name"], 
-					"realm" => $data["param"]["realm"]
-				));
 			}
 		}
 		
@@ -66,37 +96,44 @@
 <body>
 	<div id="navlist">
 		<?php
-			$funcs = getFunctions();
-		
-			foreach($funcs as $n => $data)
+			$cats = getCategories();
+			
+			foreach($cats as $n => $cat)
 			{
-				//preprocess name
-				$name = $data["name"];
-				$name_parts = explode('.', $name);
-				$name_type = explode(':', $name);
-				$name_print = '<a href="?func=' . $name . '"><span class="navlist-element wrapper">';
-
-				for ($i = 0; $i < count($name_parts) - 1; $i++) 
+				echo '<span class="navlist-element parent wrapper" style="font-size: 14px;">' . $cat . '</span><br />';
+				
+				$funcs = getFunctions($cat);
+			
+				foreach($funcs as $n2 => $data)
 				{
-					$name_print .= '<span class="navlist-element prefix type-module">' . $name_parts[$i];
-					
-					if ($i < count($name_parts) - 1) {
-						$name_print .= '.';
+					//preprocess name
+					$name = $data["name"];
+					$name_parts = explode('.', $name);
+					$name_type = explode(':', $name);
+					$name_print = '<a href="?func=' . $name . '"><span class="navlist-element wrapper">';
+
+					for($i = 0; $i < count($name_parts) - 1; $i++) 
+					{
+						$name_print .= '<span class="navlist-element prefix type-module">' . $name_parts[$i];
+						
+						if ($i < count($name_parts) - 1) {
+							$name_print .= '.';
+						}
+						
+						$name_print .= '</span>';
 					}
 					
-					$name_print .= '</span>';
-				}
-				
-				if (count($name_type) > 1)
-				{
-					$name_print .= '<span class="navlist-element prefix hook">' . $name_type[1] . ':</span>';
-					$isType = true;
-				}
-				
-				$name_print .= '<span class="navlist-element ' . strtolower($data["realm"]) . '">' . (isset($isType) ? end($name_type) : end($name_parts)) . '</span></span>';
-				$name_print .= '</a>';
+					if(count($name_type) > 1)
+					{
+						$name_print .= '<span class="navlist-element prefix hook">' . $name_type[1] . ':</span>';
+						$isType = true;
+					}
+					
+					$name_print .= '<span class="navlist-element ' . strtolower($data["realm"]) . '">' . (isset($isType) ? end($name_type) : end($name_parts)) . '</span></span>';
+					$name_print .= '</a>';
 
-				echo $name_print;
+					echo $name_print;
+				}
 			}
 		?>
 	</div>
