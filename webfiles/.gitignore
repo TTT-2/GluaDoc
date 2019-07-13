@@ -1,5 +1,4 @@
 #igonore dist folder
-SVDATA/dist/
-SVDATA/compiled/
+__workspace__/compiled/
 node_modules/
 package-lock.json

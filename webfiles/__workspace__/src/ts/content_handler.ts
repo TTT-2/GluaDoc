@@ -89,6 +89,11 @@ export class ContentHandler {
         this.ajax.send({
             url: params.next_template.template_url,
             on_complete: (data) => {
+                if (document.getElementById(params.next_template.elelement_id) === null) {
+                    console.error('ERROR: No element with the id ' + params.next_template.elelement_id + ' found!');
+                    return;
+                }
+
                 document.getElementById(params.next_template.elelement_id)!.innerHTML = data;
 
                 if (params.template_list.length > 0) {

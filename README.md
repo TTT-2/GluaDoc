@@ -38,6 +38,8 @@ end
 
 ## How to Set up the Webserver
 
+Normally you only have to drop the `SVDATA` folder into your webserver. If you want to change some things, you have to edit the typescript files found in the `__workspace__` and recompile them. The following steps explain how to do so.
+
 After installing node you have to navigate into the `webfiles` folder. Issue the command
 
 ```txt
