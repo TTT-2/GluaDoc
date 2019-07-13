@@ -214,7 +214,21 @@
 
 				if(isset($requestedFunction))
 				{
-					echo '<span class="code-funcname ' . strtolower($requestedFunction["param"]["realm"]) . '">' . $requestedFunction["name"] . '</span><span class="code-funcargs">( ' . (isset($requestedFunction["param"]["args"]) ? $requestedFunction["param"]["args"] : "" ) . ' )</span><br>';
+					$args = "";
+					
+					if(isset($requestedFunction["param"]["param"]))
+					{
+						foreach($requestedFunction["param"]["param"] as $n => $arg)
+						{	
+							$args .= $arg . ', ';
+						}
+						
+						$args = substr($args, 0, -2);
+						
+						$args = str_replace("UNDEFINED", "?", $args);
+					}
+					
+					echo '<span class="code-funcname ' . strtolower($requestedFunction["param"]["realm"]) . '">' . $requestedFunction["name"] . '</span><span class="code-funcargs">( ' . $args . ' )</span><br>';
 
 					if(isset($requestedFunction["param"]["desc"]))
 					{

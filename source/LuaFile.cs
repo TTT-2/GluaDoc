@@ -13,6 +13,23 @@ namespace LuaDocIt
 		public string Type;
 		public string TypeName;
 
+		private List<string> AddOrCreateList(Dictionary<string, object> dict, string key)
+		{
+			List<string> list;
+
+			if (dict.ContainsKey(key))
+			{
+				list = (List<string>)dict[key];
+			}
+			else
+			{
+				list = new List<string>();
+				dict.Add(key, list);
+			}
+
+			return list;
+		}
+
 		private string GetLineParam(int i)
 		{
 			string param = this.Lines[i].TrimStart('-').TrimStart();
@@ -25,10 +42,8 @@ namespace LuaDocIt
 			return param.TrimStart('@').Split(' ')[0];
 		}
 
-		private Dictionary<string, object> GetWordParams(int i)
+		private string GetWordParams(int i)
 		{
-			Dictionary<string, object> param = new Dictionary<string, object>();
-
 			string key = Regex.Match(this.Lines[i], @"@\w*").Value;
 
 			this.Lines[i] = this.Lines[i].Remove(0, this.Lines[i].IndexOf(key)); // remove whats before param key
@@ -45,11 +60,7 @@ namespace LuaDocIt
 				this.Lines[i] = "";
 			}
 
-			key = key.TrimStart('@');
-
-			param.Add(key, this.Lines[i]);
-
-			return param;
+			return key.TrimStart('@');
 		}
 
 		private Dictionary<string, object> GetParams(int i, bool local = false)
@@ -60,14 +71,17 @@ namespace LuaDocIt
 			{
 				if (i - y >= 0 && Regex.IsMatch(this.Lines[i - y], @"@\w*")) // if line has @word in it then process it, otherwise stop ALL search
 				{
-					Dictionary<string, object> dict = this.GetWordParams(i - y);
+					string p = this.GetWordParams(i - y);
 
-					foreach (string key in dict.Keys)
+					if (p.Equals("param")) // support multiple @param
 					{
-						if (!param.ContainsKey(key))
-						{
-							param.Add(key, dict[key]);
-						}
+						List<string> list = this.AddOrCreateList(param, p);
+
+						list.Add(this.Lines[i - y]);
+					}
+					else if (!param.ContainsKey(p))
+					{
+						param.Add(p, this.Lines[i - y]);
 					}
 				}
 				else
@@ -126,7 +140,7 @@ namespace LuaDocIt
 					Dictionary<string, object> param = this.GetParams(i);
 
 					this.Type = "class";
-					this.Type = this.GetWordParams(i)["class"].ToString();
+					this.Type = this.GetWordParams(i);
 
 					break;
 				}
@@ -140,7 +154,7 @@ namespace LuaDocIt
 
 				if (this.GetLineParam(i).Equals("section")) // @section support
 				{
-					section = this.GetWordParams(i)["section"].ToString();
+					section = this.GetWordParams(i);
 				}
 
 				if (this.Lines[i].StartsWith("function") || local) // find line that is supposedly a function
@@ -157,6 +171,26 @@ namespace LuaDocIt
 					name = name.Remove(pos, name.Length - pos); // remove rest of the line
 
 					Dictionary<string, object> param = this.GetParams(i, local);
+
+					// add params of the function if not already inserted
+					List<string> list = this.AddOrCreateList(param, "param");
+
+					stripArgs = stripArgs.TrimStart('(').TrimEnd(')'); // remove ( and )
+
+					if (stripArgs.Length > 0)
+					{
+						string[] split = stripArgs.Split(',');
+
+						foreach (string part in split)
+						{
+							string p = part.Trim();
+
+							if (!list.Contains(p)) // just insert, if not already documented
+							{
+								list.Add("UNDEFINED " + p);
+							}
+						}
+					}
 
 					string pre = (this.Type.Equals("module")) ? (this.TypeName + ".") : ""; // adding module name as prefix
 
