@@ -38,7 +38,7 @@ end
 
 ## How to Set up the Webserver
 
-Normally you only have to drop the `SVDATA` folder into your webserver. If you want to change some things, you have to edit the typescript files found in the `__workspace__` and recompile them. The following steps explain how to do so.
+Normally you only have to drop the contents of the `__webserver__` folder into your webserver. If you want to change some things, you have to edit the typescript files found in the `__workspace__` and recompile them. The following steps explain how to do so.
 
 After installing node you have to navigate into the `webfiles` folder. Issue the command
 
@@ -54,4 +54,4 @@ Every time you want to recompile the changed sourcecode, you first have to compi
 npm run compile
 ```
 
-to create the new files. They are located in the `dist` folder.
+to create the new files. It is located in `dist/js` inside the `__webserver__` folder.
