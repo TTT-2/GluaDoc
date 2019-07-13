@@ -13,6 +13,8 @@ namespace LuaDocIt
 		public string Type;
 		public string TypeName;
 
+		public bool Ignored;
+
 		private List<string> AddOrCreateList(Dictionary<string, object> dict, string key)
 		{
 			List<string> list;
@@ -117,6 +119,7 @@ namespace LuaDocIt
 
 		public LuaFile(string path, string relPath)
 		{
+			this.Ignored = false;
 			this.Type = "";
 			this.TypeName = "";
 			this.Lines = File.ReadAllLines(path);
@@ -128,7 +131,13 @@ namespace LuaDocIt
 			{
 				this.Lines[i] = this.Lines[i].TrimStart(); // clean up every space in front
 
-				if (this.Lines[i].StartsWith("module")) // module("...", ...) support
+				if (this.GetLineParam(i).Equals("ignore")) // @ignore support
+				{
+					this.Ignored = true;
+
+					return;
+				}
+				else if (this.Lines[i].StartsWith("module")) // module("...", ...) support
 				{
 					this.Type = "module";
 					this.TypeName = this.GetName(i, "module");

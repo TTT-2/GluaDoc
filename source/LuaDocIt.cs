@@ -111,7 +111,12 @@ namespace LuaDocIt
 				relPath = relPath.TrimStart('\\');
 				relPath = relPath.Replace('\\', '/');
 
-				generated.Add(new LuaFile(files[n], relPath));
+				LuaFile file = new LuaFile(files[n], relPath);
+
+				if (!file.Ignored)
+				{
+					generated.Add(file);
+				}
 			}
 
 			return generated.ToArray();
