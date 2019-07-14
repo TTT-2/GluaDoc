@@ -2,8 +2,9 @@ export interface IAjax {
     url : string,
     contents? : Object,
     type? : string,
-    on_progress? : (event : any) => void,
-    on_complete? : (event : string) => void
+    passthrough? : Object,
+    on_progress? : (event : any, passthrough? : Object) => void,
+    on_complete? : (response : string, passthrough? : Object) => void
 };
 
 export class AjaxHandler {
@@ -19,12 +20,12 @@ export class AjaxHandler {
         xmlhttp.onreadystatechange = () => {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200)
                 if (params.on_complete !== undefined)
-                    params.on_complete(xmlhttp.responseText);
+                    params.on_complete(xmlhttp.responseText, params.passthrough);
         };
 
         xmlhttp.onprogress = (event) => {
             if (params.on_progress !== undefined)
-                params.on_progress(event)
+                params.on_progress(event, params.passthrough)
         };
 
         if (this.should_cache === false)

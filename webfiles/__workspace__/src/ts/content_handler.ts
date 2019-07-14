@@ -2,7 +2,7 @@ import { AjaxHandler } from "./ajax";
 
 export interface IInitData {
     homedir : string,
-    error_path : string
+    error_page : ITemplate
 }
 
 export interface ISetPageData {
@@ -12,20 +12,32 @@ export interface ISetPageData {
 
 export type ITemplateList = { [index: number]: ITemplate, length: number, push: Function, shift: Function };
 
+export interface IOnLoadLastPage {
+    lastUrlParameter : string,
+    urlParameter : string[]
+}
+
+export interface IOnLoad {
+    lastUrlParameter : string,
+    urlParameter : string[],
+    lastPage : IOnLoadLastPage
+}
+
 export interface ILoadCascadingTemplatesData {
     template_list : ITemplateList, 
     next_template : ITemplate, 
-    on_load_data : Object
+    on_load_data : IOnLoad
 }
 
 export interface ITemplate {
+    url_argument : string,
     template_url : string,
     elelement_id : string,
     required_url? : string,
     insert_into_parent? : boolean,
     has_template? : boolean,
     num_children? : number,
-    on_load? : (data : Object) => void
+    on_load? : (data : IOnLoad) => void
 }
 
 export class ContentHandler {
@@ -33,12 +45,18 @@ export class ContentHandler {
     templates : { [index: string]: ITemplate };
     last_page : string[];
     ajax : AjaxHandler;
+    last_next_template : ITemplate;
 
     constructor() {
         this.homedir = '';
         this.templates = {};
         this.last_page = [];
         this.ajax = new AjaxHandler(false);
+        this.last_next_template = {
+            elelement_id : '',
+            template_url : '',
+            url_argument : ''
+        };
 
         //catch history change events
         window.addEventListener('popstate', () => {
@@ -52,15 +70,11 @@ export class ContentHandler {
             for (let i = 0; i < event.path.length -4; i++) { //-4: Window, Document, HTML and Body are ignored
                 //check for link
                 if (event.path[i].href == undefined)
-                    break;
+                    continue;
     
-                //check for target
-                var target = event.path[i].target == '' ? '_self' : event.path[i].target;
-    
-                //check for external links
-                var http_link  = event.path[i].href.indexOf('http://') == 0;
-                var https_link = event.path[i].href.indexOf('https://') == 0;
-                var external = http_link || https_link;
+                //check for target and external
+                let target = event.path[i].target == '' ? '_self' : event.path[i].target;
+                let external = event.path[i].host !== window.location.host;
     
                 if (external) {
                     window.open(event.path[i].href, target);
@@ -93,7 +107,7 @@ export class ContentHandler {
                     console.error('ERROR: No element with the id ' + params.next_template.elelement_id + ' found!');
                     return;
                 }
-
+                
                 document.getElementById(params.next_template.elelement_id)!.innerHTML = data;
 
                 if (params.template_list.length > 0) {
@@ -115,15 +129,26 @@ export class ContentHandler {
 
         console.log("Setting up Content Handler ...");
 
-        this.registerTemplate('error404', {
-            template_url : params.error_path,
-            elelement_id: 'content'
-        });
+        this.registerTemplate(params.error_page);
         this.setPage({
             url: window.location.href,
             new_state: true
         });
     };
+
+    getUrl() : string[] {
+        let pathname = window.location.pathname;
+
+        //remove '/' at the beginning
+        if (pathname.charAt(0) == '/')
+            pathname = pathname.substr(1);
+
+        //remove '/' at the end
+        if (pathname.charAt(pathname.length -1) == '/')
+            pathname = pathname.substr(0, pathname.length -1);
+
+        return this.getUrlData(pathname);
+    }
 
     setPage(params : ISetPageData) : void {
         //getting relative url: bla.com/abc/def --> abc/def
@@ -142,8 +167,10 @@ export class ContentHandler {
         let urlDataForCallback = this.getUrlData(rel_url);
 
         let this_template : ITemplate;
-        this_template = this.templates[ urlData[urlData.length -1] ]; //default case
 
+        //default case: set to error page
+        this_template = this.templates['error404'];
+        
         //check if last value is in templates
         if (!(urlData[urlData.length -1] in this.templates)) {
             for (let offset = 0; offset < urlData.length; offset++) {
@@ -154,14 +181,18 @@ export class ContentHandler {
                             urlData.pop();
                         }
                         this_template = this.templates[ urlData[urlData.length -1] ];
-                    } else { //template child are not valid
-                        params.url = '/error404';
-                        rel_url = 'error404';
-                        urlData = [rel_url];
-                        this_template = this.templates[rel_url];
                     }
                 }
             }
+        } else {
+            this_template = this.templates[ urlData[urlData.length -1] ]; //default case
+        }
+
+        //set variables to display error page
+        if (this_template.url_argument == 'error404') {
+            params.url = '/error404';
+            rel_url = 'error404';
+            urlData = [rel_url];
         }
 
         //check if requiredUrl is fitting
@@ -188,7 +219,7 @@ export class ContentHandler {
             nextTemplateTmp = this_template;
         }
 
-        let data = { //values for callback
+        let data : IOnLoad = { //values for callback
             lastUrlParameter : urlDataForCallback[urlDataForCallback.length -1],
             urlParameter     : urlDataForCallback,
             lastPage         : {
@@ -197,17 +228,22 @@ export class ContentHandler {
             }
         }
 
-        this.loadCascadingTemplate({
-            template_list : templateListTmp,
-            next_template : nextTemplateTmp,
-            on_load_data  : data
-        });
+        if (this.last_next_template.url_argument != nextTemplateTmp.url_argument) {
+            this.loadCascadingTemplate({
+                template_list : templateListTmp,
+                next_template : nextTemplateTmp,
+                on_load_data  : data
+            });
+
+            this.last_next_template.url_argument = nextTemplateTmp.url_argument;
+        }
 
         this.last_page = urlData;
     };
 
-    registerTemplate(url_argument : string, template : ITemplate) : void {
-        this.templates[url_argument] = {
+    registerTemplate(template : ITemplate) : void {
+        this.templates[template.url_argument] = {
+            url_argument       : template.url_argument,
             template_url       : template.template_url,
             elelement_id       : template.elelement_id,
 
@@ -219,4 +255,9 @@ export class ContentHandler {
             on_load            : template.on_load
         };
     };
+
+    printTemplates() : void {
+        console.log("all available templates:");
+        console.log(this.templates);
+    }
 }

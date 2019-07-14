@@ -39,6 +39,16 @@ a {
 	font-size: 24px;
 }
 
+.code-source {
+	text-decoration: none;
+	color: rgba(5, 177, 125, 0.75);
+}
+
+.code-source:hover {
+	text-decoration: underline;
+	color: rgba(5, 177, 125, 1);
+}
+
 .code-funcname.client {
 	color: rgb(241, 215, 101);
 }
@@ -64,38 +74,56 @@ a {
 	float: left;
 }
 
+.navlist-type {
+	margin: 0;
+	padding: 0;
+}
+
+.navlist-typename {
+	margin: 0;
+	padding: 0 0 0 15px;
+}
+
+.navlist-function {
+	margin: 0;
+	padding: 0 0 0 15px;
+}
+
 .navlist-element {
 	margin-bottom: 2px;
 	font-size: 105%;
+	list-style-type: none;
+	opacity: 0.8;
 }
 
-.navlist-element.wrapper {
-	opacity: 0.6;
-}
-
-.navlist-element.wrapper:hover {
-	opacity: 0.95;
-}
-
-.navlist-element.wrapper:active {
+.navlist-element:hover {
 	opacity: 1;
+	text-decoration: underline;
+}
+
+.type {
+	color: rgba(255, 255, 255, 0.85);
+	text-transform: uppercase;
+	cursor: pointer;
 	font-weight: bold;
 }
 
-.navlist-element .prefix {
-	color: rgba(255, 255, 255, 0.75);
-	font-size: 85%;
+.typename {
+	color: rgba(255, 255, 255, 0.85);
+	text-transform: uppercase;
+	cursor: pointer;
+	font-size: 90%;
 }
 
-.navlist-element .client {
+.client {
 	color: rgba(6, 127, 240, 1);
 }
 
-.navlist-element .server {
+.server {
 	color: rgba(255, 115, 0, 1);
 }
 
-.navlist-element .shared {
+.shared {
 	color: rgba(165, 134, 192, 1);
 }
 
