@@ -6,14 +6,68 @@ namespace LuaDocIt
 {
 	internal class LuaFile
 	{
-		public string[] Lines;
-		public LuaFunction[] Functions;
-		public LuaHook[] Hooks;
+		public string[] Lines { get; set; }
+		public LuaFunction[] Functions { get; set; }
+		public LuaHook[] Hooks { get; set; }
 
-		public string Type;
-		public string TypeName;
+		public string Type { get; set; }
+		public string TypeName { get; set; }
 
-		public bool Ignored;
+		public bool Ignored { get; set; }
+
+		public string[] MultipleParams { get; set; } =
+		{
+			"param"
+		};
+
+		public string[] ConcatenateCommaParams { get; set; } =
+		{
+			"author" // TODO add a file option too
+		};
+
+		public string[] ConcatenateParams { get; set; } =
+		{
+			"desc"
+		};
+
+		private bool IsMultipleParam(string param)
+		{
+			foreach (string p in this.MultipleParams)
+			{
+				if (p.Equals(param))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		private bool IsConcatenateParam(string param)
+		{
+			foreach (string p in this.ConcatenateParams)
+			{
+				if (p.Equals(param))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		private bool IsConcatenateCommaParam(string param)
+		{
+			foreach (string p in this.ConcatenateCommaParams)
+			{
+				if (p.Equals(param))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
 
 		private List<string> AddOrCreateList(Dictionary<string, object> dict, string key)
 		{
@@ -65,25 +119,76 @@ namespace LuaDocIt
 			return key.TrimStart('@');
 		}
 
+		private void AddParam(Dictionary<string, object> param, string key, string val)
+		{
+			// support multiple params
+
+			if (this.IsMultipleParam(key)) // use as list
+			{
+				List<string> list = this.AddOrCreateList(param, key);
+
+				list.Add(val);
+			}
+			else if (this.IsConcatenateParam(key)) // concatenate with space
+			{
+				string p = "";
+
+				if (param.ContainsKey(key))
+				{
+					p = param[key].ToString();
+				}
+
+				p += " " + val;
+			}
+			else if (this.IsConcatenateCommaParam(key)) // concatenate with comma
+			{
+				string p = "";
+
+				if (param.ContainsKey(key))
+				{
+					p = param[key].ToString();
+				}
+
+				p += ", " + val;
+			}
+			else if (!param.ContainsKey(key)) // otherwise just allow a single param
+			{
+				param.Add(key, val);
+			}
+		}
+
 		private Dictionary<string, object> GetParams(int i, bool local = false)
 		{
 			Dictionary<string, object> param = new Dictionary<string, object>();
 
-			for (int y = 1; y < 10; y++) // run through 10 lines up to find params
+			for (int y = 1; y < 100; y++) // run through 100 (max) lines up to find params
 			{
-				if (i - y >= 0 && Regex.IsMatch(this.Lines[i - y], @"@\w*")) // if line has @word in it then process it, otherwise stop ALL search
+				if (i - y >= 0 && !this.Lines[i - y].Trim().Equals("")) // if line is valid, otherwise stop ALL search
 				{
-					string p = this.GetWordParams(i - y);
+					string line = this.Lines[i - y];
 
-					if (p.Equals("param")) // support multiple @param
+					if (Regex.IsMatch(line, @"@\w*")) // if line has @word in it then process it
 					{
-						List<string> list = this.AddOrCreateList(param, p);
+						string p = this.GetWordParams(i - y);
 
-						list.Add(this.Lines[i - y]);
+						this.AddParam(param, p, line);
 					}
-					else if (!param.ContainsKey(p))
+					else if (line.Trim().StartsWith("--")) // if this is a simple comment, it's used as @desc
 					{
-						param.Add(p, this.Lines[i - y]);
+						string trimmed = line.TrimStart('-');
+						string p = trimmed.Trim(); // clear spaces
+
+						this.AddParam(param, "desc", p);
+
+						// if there are more than two '-', stop search
+						if (line.Length - trimmed.Length > 2)
+						{
+							break;
+						}
+					}
+					else // otherwise stop ALL search
+					{
+						break;
 					}
 				}
 				else
@@ -129,7 +234,7 @@ namespace LuaDocIt
 
 			for (int i = 0; i < this.Lines.Length; i++)
 			{
-				this.Lines[i] = this.Lines[i].TrimStart(); // clean up every space in front
+				this.Lines[i] = this.Lines[i].TrimStart(); // clear every space in front
 
 				if (this.GetLineParam(i).Equals("ignore")) // @ignore support
 				{
@@ -150,7 +255,9 @@ namespace LuaDocIt
 
 					this.Type = "class";
 					this.Type = this.GetWordParams(i);
-
+				}
+				else if (!this.Lines[i].StartsWith("--") && !this.Lines[i].Equals("")) // if this line is no comment and not empty
+				{
 					break;
 				}
 			}
