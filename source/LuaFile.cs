@@ -157,33 +157,48 @@ namespace LuaDocIt
 		{
 			Dictionary<string, object> param = new Dictionary<string, object>();
 
+			int start = -1;
+
+			// at first we need to find the starting comment (line with more than two '-')
 			for (int y = 1; y < 100; y++) // run through 100 (max) lines up to find params
 			{
-				if (i - y >= 0 && !this.Lines[i - y].Trim().Equals("")) // if line is valid, otherwise stop ALL search
+				if (i - y < 0) // if line is not valid
 				{
-					string line = this.Lines[i - y];
+					break;
+				}
+				else if (this.Lines[i - y].Trim().StartsWith("---")) // more than two '-'?
+				{
+					start = i - y;
+
+					break;
+				}
+			}
+
+			if (start == -1)
+			{
+				return param;
+			}
+
+			for (int y = 0; start + y < i - 1; y++) // run from starting line to the ending line to find params
+			{
+				int currentLine = start + y;
+
+				if (currentLine >= 0 && !this.Lines[currentLine].Trim().Equals("")) // if line is valid, otherwise stop ALL search
+				{
+					string line = this.Lines[currentLine];
 
 					if (line.Trim().StartsWith("--"))
 					{
 						if (Regex.IsMatch(line, @"^\s*-+\s*@\w+")) // if line has @word in it then process it
 						{
-							string p = this.GetWord(i - y);
-							string val = this.GetWordParam(i - y, p);
+							string p = this.GetWord(currentLine);
+							string val = this.GetWordParam(currentLine, p);
 
 							this.AddParam(param, p, val);
 						}
 						else // if this is a simple comment, it's used as @desc
 						{
-							string trimmed = line.TrimStart('-');
-							string p = trimmed.Trim(); // clear spaces
-
-							this.AddParam(param, "desc", p);
-
-							// if there are more than two '-', stop search
-							if (line.Length - trimmed.Length > 2)
-							{
-								break;
-							}
+							this.AddParam(param, "desc", line.TrimStart('-').Trim()); // clear '-' and spaces
 						}
 					}
 					else // otherwise stop ALL search
