@@ -145,7 +145,7 @@ namespace LuaDocIt
 
 				p += (this.IsConcatenateCommaParam(key) ? ", " : " ") + val;
 
-				param[key] = p;
+				param[key] = p.Trim();
 			}
 			else if (!param.ContainsKey(key)) // otherwise just allow a single param
 			{
@@ -153,68 +153,33 @@ namespace LuaDocIt
 			}
 		}
 
-		private Dictionary<string, object> GetParams(int i, bool local = false)
+		private bool IsParam(int line)
 		{
-			Dictionary<string, object> param = new Dictionary<string, object>();
+			return this.Lines[line].Trim().StartsWith("--"); // min two '-'?
+		}
 
-			int start = -1;
+		private bool IsStartingParam(int line)
+		{
+			return this.Lines[line].Trim().StartsWith("---"); // more than two '-'?
+		}
 
-			// at first we need to find the starting comment (line with more than two '-')
-			for (int y = 1; y < 100; y++) // run through 100 (max) lines up to find params
+		private Dictionary<string, object> AddToParams(int i, Dictionary<string, object> param)
+		{
+			string line = this.Lines[i];
+
+			if (line.Trim().StartsWith("--"))
 			{
-				if (i - y < 0) // if line is not valid
+				if (Regex.IsMatch(line, @"^\s*-+\s*@\w+")) // if line has @word in it then process it
 				{
-					break;
+					string p = this.GetWord(i);
+					string val = this.GetWordParam(i, p);
+
+					this.AddParam(param, p, val);
 				}
-				else if (this.Lines[i - y].Trim().StartsWith("---")) // more than two '-'?
+				else // if this is a simple comment, it's used as @desc
 				{
-					start = i - y;
-
-					break;
+					this.AddParam(param, "desc", line.TrimStart('-').Trim()); // clear '-' and spaces
 				}
-			}
-
-			if (start == -1)
-			{
-				return param;
-			}
-
-			for (int y = 0; start + y < i - 1; y++) // run from starting line to the ending line to find params
-			{
-				int currentLine = start + y;
-
-				if (currentLine >= 0 && !this.Lines[currentLine].Trim().Equals("")) // if line is valid, otherwise stop ALL search
-				{
-					string line = this.Lines[currentLine];
-
-					if (line.Trim().StartsWith("--"))
-					{
-						if (Regex.IsMatch(line, @"^\s*-+\s*@\w+")) // if line has @word in it then process it
-						{
-							string p = this.GetWord(currentLine);
-							string val = this.GetWordParam(currentLine, p);
-
-							this.AddParam(param, p, val);
-						}
-						else // if this is a simple comment, it's used as @desc
-						{
-							this.AddParam(param, "desc", line.TrimStart('-').Trim()); // clear '-' and spaces
-						}
-					}
-					else // otherwise stop ALL search
-					{
-						break;
-					}
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			if (local && !param.ContainsKey("local"))
-			{
-				param.Add("local", "");
 			}
 
 			return param;
@@ -279,14 +244,28 @@ namespace LuaDocIt
 			}
 
 			string section = null;
+			Dictionary<string, object> cachedParams = new Dictionary<string, object>();
 
 			for (int i = 0; i < this.Lines.Length; i++)
 			{
+				if (this.Lines[i].Trim().Equals("")) // empty line
+				{
+					continue;
+				}
+
 				bool local = this.Lines[i].StartsWith("local function");
 
 				if (this.GetLineParam(i).Equals("section")) // @section support
 				{
 					section = this.GetWordParam(i, this.GetWord(i));
+				}
+				else if (this.IsStartingParam(i)) // exclude commented but documented functions
+				{
+					cachedParams.Clear(); // clear cached dict
+				}
+				else if (this.IsParam(i))
+				{
+					this.AddToParams(i, cachedParams);
 				}
 				else if (this.Lines[i].StartsWith("function") || local) // find line that is supposedly a function
 				{
@@ -301,7 +280,17 @@ namespace LuaDocIt
 
 					name = name.Remove(pos, name.Length - pos); // remove rest of the line
 
-					Dictionary<string, object> param = this.GetParams(i, local);
+					// copy cached dict
+					Dictionary<string, object> param = new Dictionary<string, object>(cachedParams);
+
+					// clear cached dict
+					cachedParams.Clear();
+
+					// add local param if not already set
+					if (local && !param.ContainsKey("local"))
+					{
+						param.Add("local", "");
+					}
 
 					// add params of the function if not already inserted
 					List<string> list = this.AddOrCreateList(param, "param");
@@ -337,7 +326,12 @@ namespace LuaDocIt
 						{
 							string stripArgs = Regex.Match(this.Lines[i], @"(\(.*)\)").Value;
 							string name = this.GetName(i, hookIdentifier);
-							Dictionary<string, object> param = this.GetParams(i);
+
+							// copy cached dict
+							Dictionary<string, object> param = new Dictionary<string, object>(cachedParams);
+
+							// clear cached dict
+							cachedParams.Clear();
 
 							// add params of the function if not already inserted
 							List<string> list = this.AddOrCreateList(param, "param");
