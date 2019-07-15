@@ -306,9 +306,7 @@ namespace LuaDocIt
 						}
 					}
 
-					string pre = (this.Type.Equals("module")) ? (this.TypeName + ".") : ""; // adding module name as prefix
-
-					finds.Add(new LuaFunction(pre + name, param, section, this.Type, this.TypeName, relPath, i + 1));
+					finds.Add(new LuaFunction(name, param, section, this.Type, this.TypeName, relPath, i + 1));
 				}
 				else
 				{
