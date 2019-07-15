@@ -134,7 +134,7 @@ namespace LuaDocIt
 
 				list.Add(val);
 			}
-			else if (this.IsConcatenateParam(key)) // concatenate with space
+			else if (this.IsConcatenateParam(key) || this.IsConcatenateCommaParam(key)) // concatenate with space or comma
 			{
 				string p = "";
 
@@ -143,18 +143,9 @@ namespace LuaDocIt
 					p = param[key].ToString();
 				}
 
-				p += " " + val;
-			}
-			else if (this.IsConcatenateCommaParam(key)) // concatenate with comma
-			{
-				string p = "";
+				p += (this.IsConcatenateCommaParam(key) ? ", " : " ") + val;
 
-				if (param.ContainsKey(key))
-				{
-					p = param[key].ToString();
-				}
-
-				p += ", " + val;
+				param[key] = p;
 			}
 			else if (!param.ContainsKey(key)) // otherwise just allow a single param
 			{
