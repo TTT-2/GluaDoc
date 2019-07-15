@@ -98,25 +98,30 @@ namespace LuaDocIt
 			return param.TrimStart('@').Split(' ')[0];
 		}
 
-		private string GetWordParams(int i)
+		private string GetWord(int i)
 		{
 			string key = Regex.Match(this.Lines[i], @"@\w*").Value;
 
-			this.Lines[i] = this.Lines[i].Remove(0, this.Lines[i].IndexOf(key)); // remove whats before param key
-
-			int end = key.Length + 1;
-
-			if (end <= this.Lines[i].Length) // if there are params for the word
-			{
-				this.Lines[i] = this.Lines[i].Remove(this.Lines[i].IndexOf(key), end); // remove param key from line + one space
-				this.Lines[i] = this.Lines[i].TrimEnd(';');
-			}
-			else // there are no params for this word
-			{
-				this.Lines[i] = "";
-			}
-
 			return key.TrimStart('@');
+		}
+
+		private string GetWordParam(int i, string word)
+		{
+			string line = this.Lines[i];
+			int index = line.IndexOf(word);
+			string val = line.Remove(0, index); // remove whats before param key
+
+			if (word.Length + 1 <= line.Length) // if there are params for the word
+			{
+				val = val.Remove(line.IndexOf(word) - index, word.Length).Trim(); // remove param key from line and following spaces
+				val = val.TrimEnd(';');
+			}
+			else
+			{
+				val = "";
+			}
+
+			return val;
 		}
 
 		private void AddParam(Dictionary<string, object> param, string key, string val)
@@ -167,23 +172,27 @@ namespace LuaDocIt
 				{
 					string line = this.Lines[i - y];
 
-					if (Regex.IsMatch(line, @"@\w*")) // if line has @word in it then process it
+					if (line.Trim().StartsWith("--"))
 					{
-						string p = this.GetWordParams(i - y);
-
-						this.AddParam(param, p, line);
-					}
-					else if (line.Trim().StartsWith("--")) // if this is a simple comment, it's used as @desc
-					{
-						string trimmed = line.TrimStart('-');
-						string p = trimmed.Trim(); // clear spaces
-
-						this.AddParam(param, "desc", p);
-
-						// if there are more than two '-', stop search
-						if (line.Length - trimmed.Length > 2)
+						if (Regex.IsMatch(line, @"^\s*-+\s*@\w+")) // if line has @word in it then process it
 						{
-							break;
+							string p = this.GetWord(i - y);
+							string val = this.GetWordParam(i - y, p);
+
+							this.AddParam(param, p, val);
+						}
+						else // if this is a simple comment, it's used as @desc
+						{
+							string trimmed = line.TrimStart('-');
+							string p = trimmed.Trim(); // clear spaces
+
+							this.AddParam(param, "desc", p);
+
+							// if there are more than two '-', stop search
+							if (line.Length - trimmed.Length > 2)
+							{
+								break;
+							}
 						}
 					}
 					else // otherwise stop ALL search
@@ -235,7 +244,10 @@ namespace LuaDocIt
 			for (int i = 0; i < this.Lines.Length; i++)
 			{
 				this.Lines[i] = this.Lines[i].TrimStart(); // clear every space in front
+			}
 
+			for (int i = 0; i < this.Lines.Length; i++)
+			{
 				if (this.GetLineParam(i).Equals("ignore")) // @ignore support
 				{
 					this.Ignored = true;
@@ -251,10 +263,8 @@ namespace LuaDocIt
 				}
 				else if (this.GetLineParam(i).Equals("class")) // @class support
 				{
-					Dictionary<string, object> param = this.GetParams(i);
-
 					this.Type = "class";
-					this.Type = this.GetWordParams(i);
+					this.TypeName = this.GetWordParam(i, this.GetWord(i));
 				}
 				else if (!this.Lines[i].StartsWith("--") && !this.Lines[i].Equals("")) // if this line is no comment and not empty
 				{
@@ -270,10 +280,9 @@ namespace LuaDocIt
 
 				if (this.GetLineParam(i).Equals("section")) // @section support
 				{
-					section = this.GetWordParams(i);
+					section = this.GetWordParam(i, this.GetWord(i));
 				}
-
-				if (this.Lines[i].StartsWith("function") || local) // find line that is supposedly a function
+				else if (this.Lines[i].StartsWith("function") || local) // find line that is supposedly a function
 				{
 					int trimLen = local ? 14 : 8;
 
