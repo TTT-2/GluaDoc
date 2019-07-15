@@ -285,12 +285,19 @@ namespace LuaDocIt
 
 			string section = null;
 			Dictionary<string, object> cachedParams = new Dictionary<string, object>();
+			bool cacheActivated = false;
 
 			for (int i = 0; i < this.Lines.Length; i++)
 			{
 				if (this.Lines[i].Trim().Equals("")) // empty line
 				{
 					continue;
+				}
+				else if (this.IsStartingParam(i)) // exclude commented but documented functions, you need to start with min. 3x '-' ("---")
+				{
+					cachedParams.Clear(); // clear cached dict
+					
+					cacheActivated = true; // activate caching
 				}
 
 				bool local = this.Lines[i].StartsWith("local function");
@@ -299,11 +306,7 @@ namespace LuaDocIt
 				{
 					section = this.GetWordParam(i, this.GetWord(i));
 				}
-				else if (this.IsStartingParam(i)) // exclude commented but documented functions
-				{
-					cachedParams.Clear(); // clear cached dict
-				}
-				else if (this.IsParam(i))
+				else if (cacheActivated && this.IsParam(i)) //  just process if caching is activated
 				{
 					this.AddToParams(i, cachedParams);
 				}
@@ -325,6 +328,9 @@ namespace LuaDocIt
 
 					// clear cached dict
 					cachedParams.Clear();
+
+					// deactivate caching
+					cacheActivated = false;
 
 					// add local param if not already set
 					if (local && !param.ContainsKey("local"))
@@ -372,6 +378,9 @@ namespace LuaDocIt
 
 							// clear cached dict
 							cachedParams.Clear();
+
+							// deactivate caching
+							cacheActivated = false;
 
 							// add params of the function if not already inserted
 							Dictionary<string, string> list = this.AddOrCreateDictionary(param, "param");

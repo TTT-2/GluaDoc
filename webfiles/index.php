@@ -5,7 +5,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <?php
-	$excludeUndocumentedFunctions = false;
+	$excludeUndocumentedFunctions = true;
 
 	function getData()
 	{
@@ -18,7 +18,7 @@
 			{
 				foreach($typeNames as $typeName => $data)
 				{
-					if((count($data["param"]) > 0 || !$GLOBALS["excludeUndocumentedFunctions"]) && !isset($data["param"]["local"])) // exclude unset functions or @local functions
+					if((isset($data["param"]["desc"]) && $data["param"]["desc"] != "" || !$GLOBALS["excludeUndocumentedFunctions"]) && !isset($data["param"]["local"])) // exclude unset functions or @local functions
 					{
 						if (!isset($data["param"]["realm"]))
 						{
@@ -112,7 +112,7 @@
 					{
 						foreach($typeNames as $n => $data)
 						{
-							if((count($data["param"]) > 0 || !$GLOBALS["excludeUndocumentedFunctions"]) && !isset($data["param"]["local"])) // exclude unset functions or @local functions
+							if((isset($data["param"]["desc"]) && $data["param"]["desc"] != "" || !$GLOBALS["excludeUndocumentedFunctions"]) && !isset($data["param"]["local"])) // exclude unset functions or @local functions
 							{
 								if(!isset($data["param"]["realm"]))
 								{
@@ -135,6 +135,11 @@
 	
 	function replaceType($type)
 	{
+		if ($type == "?")
+		{
+			return $type;
+		}
+		
 		$arr = explode("|", $type);
 		
 		for ($i = 0; $i < count($arr); $i++)
