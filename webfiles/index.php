@@ -12,11 +12,11 @@
 		$jsonData = \JsonMachine\JsonMachine::fromFile('documentation.json');
 		$allData = array();
 		
-		foreach($jsonData as $n => $types)
+		foreach($jsonData as $type => $types)
 		{	
-			foreach($types as $type => $typeNames)
+			foreach($types as $typeName => $typeNames)
 			{
-				foreach($typeNames as $typeName => $data)
+				foreach($typeNames as $n => $data)
 				{
 					if((isset($data["param"]["desc"]) && $data["param"]["desc"] != "" || !$GLOBALS["excludeUndocumentedFunctions"]) && !isset($data["param"]["local"])) // exclude unset functions or @local functions
 					{
@@ -121,7 +121,9 @@
 								
 								array_push($fns, array(
 									"name" => $data["name"], 
-									"realm" => $data["param"]["realm"]
+									"realm" => $data["param"]["realm"],
+									"type" => $type,
+									"typeName" => $typeName
 								));
 							}
 						}
@@ -166,6 +168,30 @@
 		
 		return $text;
 	}
+	
+	function getPrefix($data)
+	{
+		$pre = "";
+		
+		if(isset($data["typeName"]) && $data["typeName"] != "")
+		{
+			if(isset($data["type"]))
+			{
+				$pre = $data["typeName"];
+				
+				if($data["type"] == "module")
+				{
+					$pre .= ".";
+				}
+				elseif($data["type"] == "type")
+				{
+					$pre .= ":";
+				}
+			}
+		}
+		
+		return $pre;
+	}
 ?>
 <head>
 	<meta charset="utf-8">
@@ -199,13 +225,13 @@
 						$name = $data["name"];
 						$name_parts = explode('.', $name);
 						$name_type_found = strpos($name, ":") !== false;
-						$name_print = '<a href="?func=' . $name . '"><span class="navlist-element wrapper">';
+						$name_print = '<a href="?func=' . getPrefix($data) . $name . '"><span class="navlist-element wrapper">';
 
 						for($i = 0; $i < count($name_parts) - 1; $i++) 
 						{
 							$name_print .= '<span class="navlist-element prefix type-module">' . $name_parts[$i];
 							
-							if ($i < count($name_parts) - 1) {
+							if($i < count($name_parts) - 1) {
 								$name_print .= '.';
 							}
 							
@@ -245,8 +271,8 @@
 				if(isset($_GET) && isset($_GET["func"]))
 				{
 					foreach($funcData as $n => $data)
-					{
-						if($data["name"] == $_GET["func"])
+					{	
+						if(getPrefix($data) . $data["name"] == $_GET["func"])
 						{
 							$requestedFunction = $data;
 							
@@ -272,11 +298,10 @@
 						}
 						
 						$args = substr($args, 0, -2);
-						
 						$args = str_replace("_UDF_PRM_", "?", $args);
 					}
 					
-					echo '<span class="code-funcname ' . strtolower($requestedFunction["param"]["realm"]) . '">' . $requestedFunction["name"] . '</span><span class="code-funcargs">( ' . $args . ' )</span><br>';
+					echo '<span class="code-funcname ' . strtolower($requestedFunction["param"]["realm"]) . '">' . getPrefix($requestedFunction) . $requestedFunction["name"] . '</span><span class="code-funcargs">( ' . $args . ' )</span><br>';
 
 					if(isset($requestedFunction["param"]["desc"]))
 					{
