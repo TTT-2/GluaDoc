@@ -132,6 +132,35 @@
 		
 		return $fns;
 	}
+	
+	function replaceType($type)
+	{
+		$arr = explode("|", $type);
+		
+		for ($i = 0; $i < count($arr); $i++)
+		{
+			if ($i != 0)
+			{
+				$ret .= " / ";
+			}
+			
+			$ret .= '<a href="https://wiki.garrysmod.com/page/' . str_replace(':', '/', str_replace('.', '/', $arr[$i])) . '">' . $arr[$i] . '</a>';
+		}
+		
+		return $ret;
+	}
+	
+	function searchReplace($text)
+	{
+		preg_match_all('/@{([\.*:*\w+]*)}/', $text, $arr, PREG_OFFSET_CAPTURE);
+		
+		for ($i = 0; $i < count($arr[0]); $i++)
+		{	
+			$text = str_replace($arr[0][$i][0], replaceType($arr[1][$i][0]), $text);
+		}
+		
+		return $text;
+	}
 ?>
 <head>
 	<meta charset="utf-8">
@@ -229,7 +258,12 @@
 					{
 						foreach($requestedFunction["param"]["param"] as $n => $arg)
 						{	
-							$args .= $arg . ', ';
+							$arr = explode(" ", $arg);
+							
+							$type = replaceType($arr[0]);
+							$str = $type . " " . $arr[1];
+							
+							$args .= $str . ', ';
 						}
 						
 						$args = substr($args, 0, -2);
@@ -241,11 +275,11 @@
 
 					if(isset($requestedFunction["param"]["desc"]))
 					{
-						echo '<span class="code-desc">Desc: ' . $requestedFunction["param"]["desc"] . '</span><br>';
+						echo '<p><span class="code-desc">Desc: ' . searchReplace($requestedFunction["param"]["desc"]) . '</span></p>';
 					}
 
-					echo '<span class="code-note">Note: ' . (isset($requestedFunction["param"]["note"]) ? $requestedFunction["param"]["note"] : "None" ) . '</span><br />';
-					echo '<span class="code-source">Source: <a href="https://github.com/TTT-2/TTT2/tree/master/' . $requestedFunction["path"] . '#L' . $requestedFunction["line"] . '">' . $requestedFunction["path"] . ':' . $requestedFunction["line"] . '</a></span>';
+					echo '<p><span class="code-note">Note: ' . (isset($requestedFunction["param"]["note"]) ? $requestedFunction["param"]["note"] : "None" ) . '</span></p>';
+					echo '<p><span class="code-source">Source: <a href="https://github.com/TTT-2/TTT2/tree/master/' . $requestedFunction["path"] . '#L' . $requestedFunction["line"] . '">' . $requestedFunction["path"] . ':' . $requestedFunction["line"] . '</a></span></p>';
 				}
 			?>
 		</div>

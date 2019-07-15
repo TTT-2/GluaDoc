@@ -2,6 +2,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
+/**
+ * TODO
+ * multi type support (@param nil|Table|Player)
+ * opt  support (@param[opt])
+ * optchain support (@param[optchain])
+ */
+
 namespace LuaDocIt
 {
 	internal class LuaFile
@@ -17,7 +24,9 @@ namespace LuaDocIt
 
 		public string[] MultipleParams { get; set; } =
 		{
-			"param"
+			"param",
+			"return",
+			"usage"
 		};
 
 		public string[] ConcatenateCommaParams { get; set; } =
@@ -86,6 +95,23 @@ namespace LuaDocIt
 			return list;
 		}
 
+		private Dictionary<string, string> AddOrCreateDictionary(Dictionary<string, object> dict, string key)
+		{
+			Dictionary<string, string> list;
+
+			if (dict.ContainsKey(key))
+			{
+				list = (Dictionary<string, string>)dict[key];
+			}
+			else
+			{
+				list = new Dictionary<string, string>();
+				dict.Add(key, list);
+			}
+
+			return list;
+		}
+
 		private string GetLineParam(int i)
 		{
 			string param = this.Lines[i].TrimStart('-').TrimStart();
@@ -130,9 +156,23 @@ namespace LuaDocIt
 
 			if (this.IsMultipleParam(key)) // use as list
 			{
-				List<string> list = this.AddOrCreateList(param, key);
+				if (key.Equals("param"))
+				{
+					Dictionary<string, string> list = this.AddOrCreateDictionary(param, key);
 
-				list.Add(val);
+					string[] arr = val.Trim().Split(' ');
+
+					if (arr.Length > 1)
+					{
+						list.Add(arr[1], val);
+					}
+				}
+				else
+				{
+					List<string> list = this.AddOrCreateList(param, key);
+
+					list.Add(val);
+				}
 			}
 			else if (this.IsConcatenateParam(key) || this.IsConcatenateCommaParam(key)) // concatenate with space or comma
 			{
@@ -293,7 +333,7 @@ namespace LuaDocIt
 					}
 
 					// add params of the function if not already inserted
-					List<string> list = this.AddOrCreateList(param, "param");
+					Dictionary<string, string> list = this.AddOrCreateDictionary(param, "param");
 
 					stripArgs = stripArgs.TrimStart('(').TrimEnd(')'); // remove ( and )
 
@@ -303,9 +343,9 @@ namespace LuaDocIt
 						{
 							string p = part.Trim();
 
-							if (!list.Contains(p)) // just insert, if not already documented
+							if (!list.ContainsKey(p)) // just insert, if not already documented
 							{
-								list.Add("_UDF_PRM_ " + p);
+								list.Add(p, "_UDF_PRM_ " + p);
 							}
 						}
 					}
@@ -334,7 +374,7 @@ namespace LuaDocIt
 							cachedParams.Clear();
 
 							// add params of the function if not already inserted
-							List<string> list = this.AddOrCreateList(param, "param");
+							Dictionary<string, string> list = this.AddOrCreateDictionary(param, "param");
 
 							stripArgs = stripArgs.TrimStart('(').TrimEnd(')'); // remove ( and )
 
@@ -361,9 +401,9 @@ namespace LuaDocIt
 										continue;
 									}
 
-									if (!list.Contains(p)) // just insert, if not already documented
+									if (!list.ContainsKey(p)) // just insert, if not already documented
 									{
-										list.Add("_UDF_PRM_ " + p);
+										list.Add(p, "_UDF_PRM_ " + p);
 									}
 								}
 							}
