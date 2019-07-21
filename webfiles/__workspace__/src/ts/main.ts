@@ -277,7 +277,7 @@ class Main {
                     this.addListElement({
                         insert_into : ul_elem,
                         layer       : 2,
-                        cssclass    : elem.realm,
+                        cssclass    : elem.param.realm || 'shared',
                         text        : key,
                         parent_path : ul_elem_data.path[0] + '/' + ul_elem_data.path[1]
                     });
@@ -315,7 +315,7 @@ class Main {
         }
 
         // data is not available - request from server
-        if (this.mainstructure[elem_data.path[0]][elem_data.path[1]][elem_data.path[2]]['param'] === undefined) {
+        if (this.mainstructure[elem_data.path[0]][elem_data.path[1]][elem_data.path[2]].complete !== true) {
             this.ajax.send({
                 url : '/SVDATA/php/request.php',
                 type: 'post',
@@ -338,6 +338,7 @@ class Main {
 
         let elem_data = this.dataFromID(data.html_elem.id);
         this.mainstructure[elem_data.path[0]][elem_data.path[1]][elem_data.path[2]] = JSON.parse(response);
+        this.mainstructure[elem_data.path[0]][elem_data.path[1]][elem_data.path[2]].complete = true;
         
         //call again, data is now available
         this.alias_code(data);

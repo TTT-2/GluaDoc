@@ -18,6 +18,7 @@ a {
 	color: white;
 	align-items: center;
 	word-wrap: normal;
+	overflow-y: scroll;
 }
 
 .code-desc {

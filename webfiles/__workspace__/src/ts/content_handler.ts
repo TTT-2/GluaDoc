@@ -75,10 +75,8 @@ export class ContentHandler {
                 //check for target and external
                 let target = event.path[i].target == '' ? '_self' : event.path[i].target;
                 let external = event.path[i].host !== window.location.host;
-    
-                if (external) {
-                    window.open(event.path[i].href, target);
-                } else {
+
+                if (!external) {
                     if (target == '_self') {
                         this.setPage({
                             url       : event.path[i].href,

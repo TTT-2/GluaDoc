@@ -62,7 +62,10 @@ function request_elem_list($args) {
             foreach ($sub_value as $key => $obj) {
                 $arr[$obj['name']] = [];
                 $arr[$obj['name']]['name'] = [$obj['name']];
-                $arr[$obj['name']]['realm'] = 'shared';
+                if (isset($obj['param']['realm']))
+                    $arr[$obj['name']]['param']['realm'] = $obj['param']['realm'];
+                else
+                    $arr[$obj['name']]['param']['realm'] = 'shared';
             }
         }
     }
