@@ -47,7 +47,8 @@ namespace LuaDocIt
 				LuaSortable[][] loopList =
 				{
 					files[n].Functions,
-					files[n].Hooks
+					files[n].Hooks,
+					files[n].ConVars
 				};
 
 				foreach (LuaSortable[] loop in loopList)

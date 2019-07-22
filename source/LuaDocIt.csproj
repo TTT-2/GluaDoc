@@ -33,6 +33,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="LuaConVar.cs" />
     <Compile Include="LuaSortable.cs" />
     <Compile Include="LuaDocIt.cs" />
     <Compile Include="LuaFile.cs" />

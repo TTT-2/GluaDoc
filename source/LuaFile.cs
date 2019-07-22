@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
  * multi type support (@param nil|Table|Player)
  * opt  support (@param[opt])
  * optchain support (@param[optchain])
+ * GLOBAL var support
+ * _G var support
  */
 
 namespace LuaDocIt
@@ -16,6 +18,7 @@ namespace LuaDocIt
 		public string[] Lines { get; set; }
 		public LuaFunction[] Functions { get; set; }
 		public LuaHook[] Hooks { get; set; }
+		public LuaConVar[] ConVars { get; set; }
 
 		public string Type { get; set; }
 		public string TypeName { get; set; }
@@ -251,6 +254,7 @@ namespace LuaDocIt
 
 			List<LuaFunction> finds = new List<LuaFunction>();
 			List<LuaHook> hfinds = new List<LuaHook>();
+			List<LuaConVar> cfinds = new List<LuaConVar>();
 
 			for (int i = 0; i < this.Lines.Length; i++)
 			{
@@ -296,7 +300,7 @@ namespace LuaDocIt
 				else if (this.IsStartingParam(i)) // exclude commented but documented functions, you need to start with min. 3x '-' ("---")
 				{
 					cachedParams.Clear(); // clear cached dict
-					
+
 					cacheActivated = true; // activate caching
 				}
 
@@ -360,70 +364,123 @@ namespace LuaDocIt
 				}
 				else
 				{
-					string[] hookIdentifiers =
+					// search for ConVars
 					{
-						"hook.Run",
-						"hook.Call"
-					};
-
-					foreach (string hookIdentifier in hookIdentifiers)
-					{
-						if (this.Lines[i].StartsWith(hookIdentifier))
+						string[] conVarIdentifiers =
 						{
-							string stripArgs = Regex.Match(this.Lines[i], @"(\(.*)\)").Value;
-							string name = this.GetName(i, hookIdentifier);
+							"CreateConVar",
+							"CreateClientConVar"
+						};
 
-							// copy cached dict
-							Dictionary<string, object> param = new Dictionary<string, object>(cachedParams);
-
-							// clear cached dict
-							cachedParams.Clear();
-
-							// deactivate caching
-							cacheActivated = false;
-
-							// add params of the function if not already inserted
-							Dictionary<string, string> list = this.AddOrCreateDictionary(param, "param");
-
-							stripArgs = stripArgs.TrimStart('(').TrimEnd(')'); // remove ( and )
-
-							string access = hookIdentifier.Equals("hook.Call") ? null : "GLOBAL";
-							bool jump = false;
-
-							if (stripArgs.Length > 0)
+						foreach (string conVarIdentifier in conVarIdentifiers)
+						{
+							if (this.Lines[i].StartsWith(conVarIdentifier))
 							{
-								foreach (string part in stripArgs.Split(','))
+								string stripArgs = Regex.Match(this.Lines[i], @"(\(.*)\)").Value;
+								string name = this.GetName(i, conVarIdentifier);
+
+								// copy cached dict
+								Dictionary<string, object> param = new Dictionary<string, object>(cachedParams);
+
+								// clear cached dict
+								cachedParams.Clear();
+
+								// deactivate caching
+								cacheActivated = false;
+
+								stripArgs = stripArgs.TrimStart('(').TrimEnd(')'); // remove ( and )
+
+								string def = "";
+
+								if (stripArgs.Length > 0)
 								{
-									if (!jump)
+									string[] splits = stripArgs.Split(',');
+
+									def = splits[1] ?? "";
+								}
+
+								// add default value as a param
+								// @default is used to set the default value of a ConVar
+								if (!param.ContainsKey("default"))
+								{
+									param.Add("default", def);
+								}
+
+								// @name is used to set the name of a ConVar
+								// @type is used to set the typeName of a ConVar
+								cfinds.Add(new LuaConVar(param.ContainsKey("name") ? param["name"].ToString() : name, param, conVarIdentifier, param.ContainsKey("type") ? param["type"].ToString() : "", relPath, i + 1));
+							}
+						}
+					}
+
+					// search for hooks
+					{
+						string[] hookIdentifiers =
+						{
+							"hook.Run",
+							"hook.Call"
+						};
+
+						foreach (string hookIdentifier in hookIdentifiers)
+						{
+							if (this.Lines[i].StartsWith(hookIdentifier))
+							{
+								string stripArgs = Regex.Match(this.Lines[i], @"(\(.*)\)").Value;
+								string name = this.GetName(i, hookIdentifier);
+
+								// copy cached dict
+								Dictionary<string, object> param = new Dictionary<string, object>(cachedParams);
+
+								// clear cached dict
+								cachedParams.Clear();
+
+								// deactivate caching
+								cacheActivated = false;
+
+								// add params of the function if not already inserted
+								Dictionary<string, string> list = this.AddOrCreateDictionary(param, "param");
+
+								stripArgs = stripArgs.TrimStart('(').TrimEnd(')'); // remove ( and )
+
+								string access = hookIdentifier.Equals("hook.Call") ? null : "GLOBAL";
+								bool jump = false;
+
+								if (stripArgs.Length > 0)
+								{
+									foreach (string part in stripArgs.Split(','))
 									{
-										jump = true;
+										if (!jump)
+										{
+											jump = true;
 
-										continue;
-									}
+											continue;
+										}
 
-									string p = part.Trim();
+										string p = part.Trim();
 
-									if (access == null)
-									{
-										access = p.Equals("nil") ? "GLOBAL" : p;
+										if (access == null)
+										{
+											access = p.Equals("nil") ? "GLOBAL" : p;
 
-										continue;
-									}
+											continue;
+										}
 
-									if (!list.ContainsKey(p)) // just insert, if not already documented
-									{
-										list.Add(p, "_UDF_PRM_ " + p);
+										if (!list.ContainsKey(p)) // just insert, if not already documented
+										{
+											list.Add(p, "_UDF_PRM_ " + p);
+										}
 									}
 								}
-							}
 
-							hfinds.Add(new LuaHook(name, param, hookIdentifier, param.ContainsKey("type") ? param["type"].ToString() : "", relPath, i + 1)); // @type is used to set the typeName of an hook
+								hfinds.Add(new LuaHook(name, param, hookIdentifier, param.ContainsKey("type") ? param["type"].ToString() : "", relPath, i + 1)); // @type is used to set the typeName of an hook
+							}
 						}
 					}
 				}
 
 				this.Functions = finds.ToArray();
 				this.Hooks = hfinds.ToArray();
+				this.ConVars = cfinds.ToArray();
 			}
 		}
 	}
