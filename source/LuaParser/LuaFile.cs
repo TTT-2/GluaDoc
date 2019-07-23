@@ -95,15 +95,6 @@ namespace GluaDoc
 			return param.TrimStart('@').Split(' ')[0];
 		}
 
-		// helper method
-		private IEnumerable<DictionaryEntry> CastDictionary(IDictionary dictionary)
-		{
-			foreach (DictionaryEntry entry in dictionary)
-			{
-				yield return entry;
-			}
-		}
-
 		private Match MatchParams(int i)
 		{
 			return Regex.Match(this.Lines[i], REGEX);
