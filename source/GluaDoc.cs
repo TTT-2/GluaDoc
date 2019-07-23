@@ -1,3 +1,4 @@
+using GluaDoc.LuaJsonStructure;
 using Newtonsoft.Json;
 using StylishForms;
 using System;
@@ -6,17 +7,17 @@ using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 
-namespace LuaDocIt
+namespace GluaDoc
 {
-	internal static class LuaDocIt
+	internal static class GluaDoc
 	{
-		private static string JsonASC(Dictionary<string, Dictionary<string, List<LuaSortable>>> listOb)
+		private static string JsonASC(List<LuaType> listOb)
 		{
-			foreach (string key in listOb.Keys)
+			for (int l = 0; l < listOb.Count; l++)
 			{
-				foreach (string key2 in listOb[key].Keys)
+				for (int i = 0; i < listOb[l].entries.Count; i++)
 				{
-					listOb[key][key2].Sort((x, y) => string.Compare(x.name, y.name));
+					listOb[l].entries[i].entries.Sort((x, y) => string.Compare(x.name, y.name));
 				}
 			}
 
@@ -28,64 +29,54 @@ namespace LuaDocIt
 			);
 		}
 
-		private static string GetType(LuaSortable file)
-		{
-			return file.type ?? "";
-		}
-
-		private static string GetTypeName(LuaSortable file)
-		{
-			return file.typeName ?? "";
-		}
-
 		private static void GenerateDocumentation(LuaFile[] files, string path)
 		{
-			Dictionary<string, Dictionary<string, List<LuaSortable>>> list = new Dictionary<string, Dictionary<string, List<LuaSortable>>>();
+			List<LuaType> list = new List<LuaType>();
 
 			for (int n = 0; n < files.Length; n++)
 			{
-				LuaSortable[][] loopList =
+				foreach (string key in files[n].FoundEntries.Keys)
 				{
-					files[n].Functions,
-					files[n].Hooks,
-					files[n].ConVars
-				};
-
-				foreach (LuaSortable[] loop in loopList)
-				{
-					for (int f = 0; f < loop.Length; f++)
+					foreach (LuaSortable item in (List<LuaSortable>)files[n].FoundEntries[key])
 					{
-						Dictionary<string, List<LuaSortable>> subList;
-						List<LuaSortable> luaSortables;
+						LuaType luaType = null;
+						LuaTypeEntry luaTypeEntry = null;
 
-						string type = GetType(loop[f]);
+						foreach (LuaType lt in list)
+						{
+							if (lt.name.Equals(item.type))
+							{
+								luaType = lt;
 
-						// get the sub list (dict)
-						if (list.ContainsKey(type))
-						{
-							subList = list[type];
-						}
-						else
-						{
-							subList = new Dictionary<string, List<LuaSortable>>();
-							list.Add(type, subList);
+								break;
+							}
 						}
 
-						string typeName = GetTypeName(loop[f]);
+						if (luaType == null)
+						{
+							luaType = new LuaType(item.type);
 
-						// get the list
-						if (subList.ContainsKey(typeName))
-						{
-							luaSortables = subList[typeName];
-						}
-						else
-						{
-							luaSortables = new List<LuaSortable>();
-							subList.Add(typeName, luaSortables);
+							list.Add(luaType);
 						}
 
-						// finally add the file
-						luaSortables.Add(loop[f]);
+						foreach (LuaTypeEntry lte in luaType.entries)
+						{
+							if (lte.name.Equals(item.typeName))
+							{
+								luaTypeEntry = lte;
+
+								break;
+							}
+						}
+
+						if (luaTypeEntry == null)
+						{
+							luaTypeEntry = new LuaTypeEntry(item.typeName);
+
+							luaType.entries.Add(luaTypeEntry);
+						}
+
+						luaTypeEntry.entries.Add(item);
 					}
 				}
 			}
@@ -133,7 +124,7 @@ namespace LuaDocIt
 		{
 			StylishForm mainMenu = new StylishForm
 			{
-				Text = "LuaDocIt"
+				Text = "GluaDoc"
 			};
 			mainMenu.SetBounds(0, 0, 800, 600);
 			mainMenu.Icon = new Icon("content/icon.ico");
@@ -208,56 +199,6 @@ namespace LuaDocIt
 							Parent = fileTreePanel,
 							Left = 34,
 							Top = 10 + (29 * i)
-						};
-
-						Label total = new Label
-						{
-							AutoSize = true,
-							Text = $"Elements: {luaFileObj[i].Functions.Length + luaFileObj[i].Hooks.Length}",
-							ForeColor = Color.Blue,
-							Parent = fileTreePanel,
-							Top = 10 + (29 * i),
-							Left = name.Left + name.Width + 5
-						};
-
-						int goodf = 0;
-
-						for (int f = 0; f < luaFileObj[i].Functions.Length; f++)
-						{
-							if (luaFileObj[i].Functions[f].param.Count > 0)
-							{
-								goodf++;
-							}
-						}
-
-						for (int f = 0; f < luaFileObj[i].Hooks.Length; f++)
-						{
-							if (luaFileObj[i].Hooks[f].param.Count > 0)
-							{
-								goodf++;
-							}
-						}
-
-						int badf = luaFileObj[i].Functions.Length + luaFileObj[i].Hooks.Length - goodf;
-
-						Label good = new Label
-						{
-							AutoSize = true,
-							Text = goodf > 0 ? $"To-Document: {goodf}" : "",
-							ForeColor = Color.Green,
-							Parent = fileTreePanel,
-							Top = 10 + (29 * i),
-							Left = total.Left + total.Width + 2
-						};
-
-						Label bad = new Label
-						{
-							AutoSize = true,
-							Text = badf > 0 ? $"To-Skip: {badf}" : "",
-							ForeColor = Color.Red,
-							Parent = fileTreePanel,
-							Top = 10 + (29 * i),
-							Left = good.Left + good.Width + 2
 						};
 					}
 				}

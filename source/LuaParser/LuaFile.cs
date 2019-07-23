@@ -1,3 +1,5 @@
+using GluaDoc.LuaJsonStructure;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -11,14 +13,14 @@ using System.Text.RegularExpressions;
  * _G var support
  */
 
-namespace LuaDocIt
+namespace GluaDoc
 {
 	internal class LuaFile
 	{
+		public const string REGEX = @"^\s*-{2,}\s*@\w+";
+
 		public string[] Lines { get; set; }
-		public LuaFunction[] Functions { get; set; }
-		public LuaHook[] Hooks { get; set; }
-		public LuaConVar[] ConVars { get; set; }
+		public Dictionary<string, object> FoundEntries { get; set; }
 
 		public string Type { get; set; }
 		public string TypeName { get; set; }
@@ -81,40 +83,6 @@ namespace LuaDocIt
 			return false;
 		}
 
-		private List<string> AddOrCreateList(Dictionary<string, object> dict, string key)
-		{
-			List<string> list;
-
-			if (dict.ContainsKey(key))
-			{
-				list = (List<string>)dict[key];
-			}
-			else
-			{
-				list = new List<string>();
-				dict.Add(key, list);
-			}
-
-			return list;
-		}
-
-		private Dictionary<string, string> AddOrCreateDictionary(Dictionary<string, object> dict, string key)
-		{
-			Dictionary<string, string> list;
-
-			if (dict.ContainsKey(key))
-			{
-				list = (Dictionary<string, string>)dict[key];
-			}
-			else
-			{
-				list = new Dictionary<string, string>();
-				dict.Add(key, list);
-			}
-
-			return list;
-		}
-
 		private string GetLineParam(int i)
 		{
 			string param = this.Lines[i].TrimStart('-').TrimStart();
@@ -127,72 +95,134 @@ namespace LuaDocIt
 			return param.TrimStart('@').Split(' ')[0];
 		}
 
-		private string GetWord(int i)
+		// helper method
+		private IEnumerable<DictionaryEntry> CastDictionary(IDictionary dictionary)
 		{
-			string key = Regex.Match(this.Lines[i], @"@\w*").Value;
-
-			return key.TrimStart('@');
+			foreach (DictionaryEntry entry in dictionary)
+			{
+				yield return entry;
+			}
 		}
 
-		private string GetWordParam(int i, string word)
+		private Match MatchParams(int i)
+		{
+			return Regex.Match(this.Lines[i], REGEX);
+		}
+
+		private string GetWord(int i)
+		{
+			string key = this.MatchParams(i).Value;
+
+			return key.Trim().TrimStart('-').TrimStart().TrimStart('@');
+		}
+
+		private string GetWordParam(int i)
 		{
 			string line = this.Lines[i];
-			int index = line.IndexOf(word);
+			Match match = this.MatchParams(i);
+			string word = match.Value;
+			int index = match.Index;
 			string val = line.Remove(0, index); // remove whats before param key
 
 			if (word.Length + 1 <= line.Length) // if there are params for the word
 			{
-				val = val.Remove(line.IndexOf(word) - index, word.Length).Trim(); // remove param key from line and following spaces
-				val = val.TrimEnd(';');
+				// remove param key from line and following spaces
+				return val.Remove(0, word.Length).Trim().TrimEnd(';');
 			}
 			else
 			{
-				val = "";
+				return "";
 			}
-
-			return val;
 		}
 
-		private void AddParam(Dictionary<string, object> param, string key, string val)
+		private List<T> AddOrCreateList<T>(Dictionary<string, object> dict, string key)
+		{
+			List<T> list;
+
+			if (dict.ContainsKey(key))
+			{
+				list = (List<T>)dict[key];
+			}
+			else
+			{
+				list = new List<T>();
+				dict.Add(key, list);
+			}
+
+			return list;
+		}
+
+		private void AddParam(Dictionary<string, object> param, string name, string text)
 		{
 			// support multiple params
-
-			if (this.IsMultipleParam(key)) // use as list
+			if (this.IsMultipleParam(name))
 			{
-				if (key.Equals("param"))
+				if (name.Equals("param") || name.Equals("return"))
 				{
-					Dictionary<string, string> list = this.AddOrCreateDictionary(param, key);
-
-					string[] arr = val.Trim().Split(' ');
+					int startIndex = name.Equals("param") ? 2 : 1;
+					bool? optional = null;
+					string type = "_UDF_PRM_";
+					string[] arr = text.Trim().Split(' ');
+					string prm = "";
 
 					if (arr.Length > 1)
 					{
-						list.Add(arr[1], val);
+						type = arr[0];
 					}
+
+					if (startIndex == 2 && arr.Length > 2)
+					{
+						prm = arr[1];
+					}
+
+					if (type.Equals("[opt]"))
+					{
+						optional = true;
+
+						type = arr[++startIndex];
+					}
+
+					string desc = "";
+
+					for (int i = startIndex; i < arr.Length; i++)
+					{
+						if (i != 1)
+						{
+							desc += " ";
+						}
+
+						desc += arr[i];
+					}
+
+					desc = desc.Trim();
+
+					List<LuaParam> list = this.AddOrCreateList<LuaParam>(param, name);
+
+					list.Add(new LuaParam(prm, type, desc, optional));
 				}
 				else
 				{
-					List<string> list = this.AddOrCreateList(param, key);
+					List<object> list = this.AddOrCreateList<object>(param, name);
 
-					list.Add(val);
+					list.Add(text);
 				}
 			}
-			else if (this.IsConcatenateParam(key) || this.IsConcatenateCommaParam(key)) // concatenate with space or comma
+			else if (this.IsConcatenateParam(name) || this.IsConcatenateCommaParam(name)) // concatenate with space or comma
 			{
 				string p = "";
 
-				if (param.ContainsKey(key))
+				if (param.ContainsKey(name))
 				{
-					p = param[key].ToString();
+					p = param[name].ToString();
 				}
 
-				p += (this.IsConcatenateCommaParam(key) ? ", " : " ") + val;
+				p += (this.IsConcatenateCommaParam(name) ? ", " : " ") + text;
 
-				param[key] = p.Trim();
+				param[name] = p.Trim();
 			}
-			else if (!param.ContainsKey(key)) // otherwise just allow a single param
+			else if (!param.ContainsKey(name)) // otherwise just allow a single param
 			{
-				param.Add(key, val);
+				param.Add(name, text);
 			}
 		}
 
@@ -212,10 +242,10 @@ namespace LuaDocIt
 
 			if (line.Trim().StartsWith("--"))
 			{
-				if (Regex.IsMatch(line, @"^\s*-+\s*@\w+")) // if line has @word in it then process it
+				if (Regex.IsMatch(line, REGEX)) // if line has @word in it then process it
 				{
 					string p = this.GetWord(i);
-					string val = this.GetWordParam(i, p);
+					string val = this.GetWordParam(i);
 
 					this.AddParam(param, p, val);
 				}
@@ -251,10 +281,7 @@ namespace LuaDocIt
 			this.Type = "";
 			this.TypeName = "";
 			this.Lines = File.ReadAllLines(path);
-
-			List<LuaFunction> finds = new List<LuaFunction>();
-			List<LuaHook> hfinds = new List<LuaHook>();
-			List<LuaConVar> cfinds = new List<LuaConVar>();
+			this.FoundEntries = new Dictionary<string, object>();
 
 			for (int i = 0; i < this.Lines.Length; i++)
 			{
@@ -279,7 +306,7 @@ namespace LuaDocIt
 				else if (this.GetLineParam(i).Equals("class")) // @class support
 				{
 					this.Type = "class";
-					this.TypeName = this.GetWordParam(i, this.GetWord(i));
+					this.TypeName = this.GetWordParam(i);
 				}
 				else if (!this.Lines[i].StartsWith("--") && !this.Lines[i].Equals("")) // if this line is no comment and not empty
 				{
@@ -308,7 +335,7 @@ namespace LuaDocIt
 
 				if (this.GetLineParam(i).Equals("section")) // @section support
 				{
-					section = this.GetWordParam(i, this.GetWord(i));
+					section = this.GetWordParam(i);
 				}
 				else if (cacheActivated && this.IsParam(i)) //  just process if caching is activated
 				{
@@ -343,24 +370,46 @@ namespace LuaDocIt
 					}
 
 					// add params of the function if not already inserted
-					Dictionary<string, string> list = this.AddOrCreateDictionary(param, "param");
+					List<LuaParam> tmpList = this.AddOrCreateList<LuaParam>(param, "param");
+					List<LuaParam> list = new List<LuaParam>();
 
 					stripArgs = stripArgs.TrimStart('(').TrimEnd(')'); // remove ( and )
 
 					if (stripArgs.Length > 0)
 					{
+						int found = 0;
+
 						foreach (string part in stripArgs.Split(','))
 						{
 							string p = part.Trim();
+							LuaParam prm = new LuaParam(p);
 
-							if (!list.ContainsKey(p)) // just insert, if not already documented
+							foreach (LuaParam item in tmpList)
 							{
-								list.Add(p, "_UDF_PRM_ " + p);
+								if (item.Equals(prm))
+								{
+									found++;
+									prm = item;
+
+									break;
+								}
+							}
+
+							if (!list.Contains(prm)) // just insert, if not already documented
+							{
+								list.Add(prm);
 							}
 						}
+
+						if (found != tmpList.Count)
+						{
+							System.Console.WriteLine("Param mismatch in '" + relPath + "', Line " + i);
+						}
+
+						param["param"] = list;
 					}
 
-					finds.Add(new LuaFunction(name, param, section, this.Type, this.TypeName, relPath, i + 1));
+					this.AddOrCreateList<LuaSortable>(this.FoundEntries, "functions").Add(new LuaSortable(name, param, section, this.Type, this.TypeName, relPath, i + 1));
 				}
 				else
 				{
@@ -408,7 +457,7 @@ namespace LuaDocIt
 
 								// @name is used to set the name of a ConVar
 								// @type is used to set the typeName of a ConVar
-								cfinds.Add(new LuaConVar(param.ContainsKey("name") ? param["name"].ToString() : name, param, conVarIdentifier, param.ContainsKey("type") ? param["type"].ToString() : "", relPath, i + 1));
+								this.AddOrCreateList<LuaSortable>(this.FoundEntries, "convars").Add(new LuaSortable(param.ContainsKey("name") ? param["name"].ToString() : name, param, conVarIdentifier, "hooks", param.ContainsKey("type") ? param["type"].ToString() : "", relPath, i + 1)); // @type is used to set the typeName of a ConVar
 							}
 						}
 					}
@@ -438,49 +487,68 @@ namespace LuaDocIt
 								cacheActivated = false;
 
 								// add params of the function if not already inserted
-								Dictionary<string, string> list = this.AddOrCreateDictionary(param, "param");
+								List<LuaParam> tmpList = this.AddOrCreateList<LuaParam>(param, "param");
+								List<LuaParam> list = new List<LuaParam>();
 
 								stripArgs = stripArgs.TrimStart('(').TrimEnd(')'); // remove ( and )
 
-								string access = hookIdentifier.Equals("hook.Call") ? null : "GLOBAL";
-								bool jump = false;
+								string _access = hookIdentifier.Equals("hook.Call") ? null : "GLOBAL";
+								bool _jump = false;
 
 								if (stripArgs.Length > 0)
 								{
+									int found = 0;
+
 									foreach (string part in stripArgs.Split(','))
 									{
-										if (!jump)
+										if (!_jump)
 										{
-											jump = true;
+											_jump = true;
 
 											continue;
 										}
 
 										string p = part.Trim();
 
-										if (access == null)
+										if (_access == null)
 										{
-											access = p.Equals("nil") ? "GLOBAL" : p;
+											_access = p.Equals("nil") ? "GLOBAL" : p;
 
 											continue;
 										}
 
-										if (!list.ContainsKey(p)) // just insert, if not already documented
+										LuaParam prm = new LuaParam(p);
+
+										foreach (LuaParam item in tmpList)
 										{
-											list.Add(p, "_UDF_PRM_ " + p);
+											if (item.Equals(prm))
+											{
+												found++;
+												prm = item;
+
+												break;
+											}
+										}
+
+										if (!list.Contains(prm)) // just insert, if not already documented
+										{
+											list.Add(prm);
 										}
 									}
+
+									if (found != tmpList.Count)
+									{
+										System.Console.WriteLine("Param mismatch in '" + relPath + "', Line " + i);
+									}
+
+									param["param"] = list;
 								}
 
-								hfinds.Add(new LuaHook(name, param, hookIdentifier, param.ContainsKey("type") ? param["type"].ToString() : "", relPath, i + 1)); // @type is used to set the typeName of an hook
+								this.AddOrCreateList<LuaSortable>(this.FoundEntries, "hooks").Add(new LuaSortable(name, param, hookIdentifier, "hooks", param.ContainsKey("type") ? param["type"].ToString() : "", relPath, i + 1)); // @type is used to set the typeName of an hook
 							}
 						}
 					}
 				}
-
-				this.Functions = finds.ToArray();
-				this.Hooks = hfinds.ToArray();
-				this.ConVars = cfinds.ToArray();
 			}
 		}
 	}
